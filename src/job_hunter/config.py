@@ -11,6 +11,7 @@ class Settings:
     timezone: str
     cron: str
     email_send_enabled: bool = False
+    discovery_mode: str = "disabled"
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -30,4 +31,5 @@ class Settings:
             api_token=os.getenv("API_TOKEN", ""),
             timezone=timezone,
             cron=cron,
+            discovery_mode=os.getenv("DISCOVERY_MODE", "disabled"),
         )

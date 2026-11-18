@@ -5,8 +5,9 @@ from flask import Flask, g, jsonify, request
 from sqlalchemy import create_engine, select, text
 from sqlalchemy.orm import sessionmaker
 
+from job_hunter.application.demo import run_demo
 from job_hunter.config import Settings
-from job_hunter.infrastructure.db import Job
+from job_hunter.infrastructure.db import Job, Match
 
 
 def create_app(settings: Settings | None = None) -> Flask:
@@ -61,5 +62,30 @@ def create_app(settings: Settings | None = None) -> Flask:
                     for j in rows
                 ]
             )
+
+    @app.post("/api/v1/discovery/run")
+    def discovery_run():
+        if settings.discovery_mode != "fixture":
+            return jsonify(error="discovery_not_configured"), 409
+        with app.extensions["session_factory"].begin() as session:
+            return jsonify(run_demo(session))
+
+    @app.get("/api/v1/jobs/<job_id>/match")
+    def job_match(job_id):
+        with app.extensions["session_factory"]() as session:
+            result = session.scalar(select(Match).where(Match.job_id == job_id))
+            if result is None:
+                return jsonify(error="match_not_found"), 404
+            return jsonify(result.evidence)
+
+    @app.cli.command("demo")
+    def demo():
+        """Run a synthetic offline discovery batch; never sends email."""
+        import json
+
+        import click
+
+        with app.extensions["session_factory"].begin() as session:
+            click.echo(json.dumps(run_demo(session)))
 
     return app

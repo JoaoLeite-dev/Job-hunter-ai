@@ -10,6 +10,7 @@ def app(tmp_path, monkeypatch):
     monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 'test.db'}")
     monkeypatch.setenv("API_TOKEN", "test-token")
     monkeypatch.setenv("EMAIL_SEND_ENABLED", "false")
+    monkeypatch.setenv("DISCOVERY_MODE", "disabled")
     command.upgrade(Config("alembic.ini"), "head")
     app = create_app()
     yield app

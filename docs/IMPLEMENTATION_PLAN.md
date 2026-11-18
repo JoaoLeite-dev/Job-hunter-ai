@@ -23,3 +23,10 @@ Os resultados de cada fase e limitações de ambiente são registrados no README
 SQLite é usado para testes locais rápidos; não substitui a validação em PostgreSQL.
 Tabelas de templates, variantes, aprovações e entregas serão adicionadas nas fases
 correspondentes, antes de disponibilizar as respectivas operações.
+
+## Andamento
+
+- Fase 1 conclu?da e commitada: `9b6004b` (8 testes).
+- Fase 2a conclu?da: descoberta/matching offline (16 testes + smoke Compose).
+- Fase 2b pendente: fontes reais e OpenAI; requer fontes autorizadas e decis?o de credenciais.
+- Fases 3?6 pendentes conforme depend?ncias acima.
