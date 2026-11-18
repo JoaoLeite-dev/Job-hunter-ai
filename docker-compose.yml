@@ -1,0 +1,63 @@
+x-app: &app
+  build: .
+  environment:
+    DATABASE_URL: postgresql+psycopg://jobhunter:local@db:5432/jobhunter
+    REDIS_URL: redis://redis:6379/0
+    API_TOKEN: ${API_TOKEN:?Configure API_TOKEN in .env}
+    EMAIL_SEND_ENABLED: "false"
+    JOB_SEARCH_TIMEZONE: ${JOB_SEARCH_TIMEZONE:-America/Bahia}
+    JOB_SEARCH_CRON: ${JOB_SEARCH_CRON:-0 8 * * *}
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: jobhunter
+      POSTGRES_USER: jobhunter
+      POSTGRES_PASSWORD: local
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jobhunter"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+  migrate:
+    <<: *app
+    command: ["alembic", "upgrade", "head"]
+  api:
+    <<: *app
+    ports: ["127.0.0.1:5000:5000"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health/ready')"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+  worker:
+    <<: *app
+    command: ["celery", "-A", "job_hunter.workers.celery_app:celery", "worker", "--loglevel=INFO"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+  beat:
+    <<: *app
+    command: ["celery", "-A", "job_hunter.workers.celery_app:celery", "beat", "--schedule=/tmp/celerybeat-schedule", "--loglevel=INFO"]
+volumes:
+  pgdata:
