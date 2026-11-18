@@ -8,6 +8,8 @@ x-app: &app
     RESUME_STORAGE_ROOT: /app/var/private/resumes
     DATABASE_URL: postgresql+psycopg://jobhunter:local@db:5432/jobhunter
     REDIS_URL: redis://redis:6379/0
+    UI_COOKIE_SECURE: ${UI_COOKIE_SECURE:-false}
+    UI_SESSION_SECRET: ${UI_SESSION_SECRET:-}
     API_TOKEN: ${API_TOKEN:?Configure API_TOKEN in .env}
     EMAIL_SEND_ENABLED: "false"
     MATCH_PREPARE_THRESHOLD: ${MATCH_PREPARE_THRESHOLD:-75}

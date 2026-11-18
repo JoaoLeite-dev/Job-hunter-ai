@@ -8,3 +8,6 @@ __pycache__
 
 # Never send personal resumes in the image build context.
 /*.docx
+
+frontend/node_modules
+src/job_hunter/web

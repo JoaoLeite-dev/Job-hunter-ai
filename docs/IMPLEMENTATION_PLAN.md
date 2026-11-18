@@ -35,3 +35,13 @@ correspondentes, antes de disponibilizar as respectivas operações.
 - Fase 4b1 concluída: campos autorizados e fatos confirmados pelo usuário; editor de texto com evidências, validação estrutural, variantes idempotentes e 86 testes.
 - Fase 4b2 concluída: LibreOffice no Docker, PDF privado, verificações de geometria/texto, integridade e 107 testes; smoke real PostgreSQL e baseline do mestre aprovados.
 - Fases 5–6 pendentes conforme dependências acima.
+
+
+## Incremento UI-1 ? acompanhamento local
+
+Antecipado por solicita??o do usu?rio antes da fase 5: painel React integrado ao
+Flask, sess?o autenticada, prote??o CSRF, vagas/score explic?vel, curr?culo/PDF,
+auditoria e estados reais de integra??es. 114 testes de backend e QA Chromium em
+desktop/celular aprovados. Conceito em `docs/design/`. A pr?via isolada est? na
+porta 5001; a atualiza??o da imagem Docker foi recusada e permanece pendente.
+A interface n?o declara conclu?das as fases de descoberta real, aprova??o ou envio.

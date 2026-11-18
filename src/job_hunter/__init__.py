@@ -1,4 +1,7 @@
 import hmac
+import os
+import secrets
+from datetime import timedelta
 from uuid import uuid4
 
 import click
@@ -6,9 +9,12 @@ from flask import Flask, g, jsonify, request
 from sqlalchemy import create_engine, select, text
 from sqlalchemy.orm import sessionmaker
 
+from job_hunter.api.dashboard import blueprint as dashboard_blueprint
 from job_hunter.api.resume_variants import blueprint as variant_blueprint
 from job_hunter.api.resumes import blueprint as resume_blueprint
 from job_hunter.api.resumes import profile_create, resume_import, resume_inspect
+from job_hunter.api.web import blueprint as web_blueprint
+from job_hunter.api.web import browser_authenticated, csrf_valid
 from job_hunter.application.demo import run_demo
 from job_hunter.application.sheets_sync import retry_failed, sync
 from job_hunter.config import Settings
@@ -20,6 +26,13 @@ from job_hunter.infrastructure.sheets import GoogleSheets, SheetsError
 def create_app(settings: Settings | None = None) -> Flask:
     settings = settings or Settings.from_env()
     app = Flask(__name__)
+    app.secret_key = os.getenv("UI_SESSION_SECRET") or secrets.token_hex(32)
+    app.config.update(
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE="Strict",
+        SESSION_COOKIE_SECURE=os.getenv("UI_COOKIE_SECURE", "false").lower() == "true",
+        PERMANENT_SESSION_LIFETIME=timedelta(hours=8),
+    )
     engine = create_engine(settings.database_url, pool_pre_ping=True)
     app.extensions["db_engine"] = engine
     app.extensions["session_factory"] = sessionmaker(engine)
@@ -36,12 +49,29 @@ def create_app(settings: Settings | None = None) -> Flask:
         if request.path.startswith("/api/"):
             expected = settings.api_token
             provided = request.headers.get("Authorization", "")
-            if not expected or not hmac.compare_digest(provided, f"Bearer {expected}"):
+            if provided:
+                if not expected or not hmac.compare_digest(
+                    provided.encode(), f"Bearer {expected}".encode()
+                ):
+                    return jsonify(error="unauthorized"), 401
+            elif browser_authenticated():
+                if request.method not in {"GET", "HEAD", "OPTIONS"} and not csrf_valid():
+                    return jsonify(error="csrf_required"), 403
+            else:
                 return jsonify(error="unauthorized"), 401
 
     @app.after_request
     def correlation(response):
         response.headers["X-Correlation-ID"] = g.correlation_id
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["Referrer-Policy"] = "no-referrer"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; script-src 'self'; style-src 'self'; "
+            "img-src 'self' data: blob:; connect-src 'self'; "
+            "object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'"
+        )
+        if request.path.startswith(("/api/", "/ui/")) or request.path == "/":
+            response.headers["Cache-Control"] = "private, no-store"
         return response
 
     @app.get("/health/live")
@@ -141,6 +171,8 @@ def create_app(settings: Settings | None = None) -> Flask:
         finally:
             gateway.close()
 
+    app.register_blueprint(web_blueprint)
+    app.register_blueprint(dashboard_blueprint)
     app.register_blueprint(resume_blueprint)
     app.register_blueprint(variant_blueprint)
     for command in [profile_create, resume_import, resume_inspect]:

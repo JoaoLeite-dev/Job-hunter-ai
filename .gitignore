@@ -16,3 +16,6 @@ coverage.xml
 # Private CV sources, copies, manifests and future generated variants.
 /var/private/resumes/
 /*.docx
+
+frontend/node_modules/
+/src/job_hunter/web/
