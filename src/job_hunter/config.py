@@ -15,6 +15,8 @@ class Settings:
     sheets_sync_enabled: bool = False
     resume_storage_root: str = "var/private/resumes"
     match_prepare_threshold: int = 75
+    resume_render_enabled: bool = False
+    libreoffice_binary: str = "/usr/bin/libreoffice"
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -33,6 +35,8 @@ class Settings:
             raise ValueError("Invalid match threshold")
         return cls(
             match_prepare_threshold=threshold,
+            resume_render_enabled=os.getenv("RESUME_RENDER_ENABLED", "false").lower() == "true",
+            libreoffice_binary=os.getenv("LIBREOFFICE_BINARY", "/usr/bin/libreoffice"),
             database_url=os.getenv("DATABASE_URL", "sqlite:///var/local.db"),
             redis_url=os.getenv("REDIS_URL", "redis://localhost:6379/0"),
             api_token=os.getenv("API_TOKEN", ""),

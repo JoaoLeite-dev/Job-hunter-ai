@@ -84,8 +84,8 @@ revalidação/histórico de alterações será um incremento antes de fontes rea
 - Fase 2b: fontes reais autorizadas, paginação/backoff, filtros configuráveis,
   revalidação de anúncios e integração OpenAI com schema, limites e credenciais.
 - Fase 3b: consentimento inicial Google e teste com uma planilha real.
-- Fase 4b: edição após manifesto aprovado, fatos confirmados e validação visual/ATS.
-- Fases 5/6: aprovação por hash, Gmail, limites e operação assistida.
+- Fase 5: prévia e aprovação individual do pacote por hash, seguida do envio Gmail autorizado.
+- Fase 6: limites, monitoramento e piloto assistido.
 
 A implementação atual não atende ainda ao fluxo completo de candidatura.
 
@@ -235,9 +235,9 @@ protegidos e upgrade/downgrade/upgrade no PostgreSQL aprovados. A descoberta e o
 worker também passaram no teste de regressão. Nenhum fato profissional nem campo
 do CV real foi autorizado automaticamente; nenhum trecho do CV foi versionado.
 
-A fase 4b implementará a edição de campos autorizados, fatos confirmados, exportação
+As fases 4b1 e 4b2 implementam a edição de campos autorizados, fatos confirmados, exportação
 PDF e validações estrutural, visual e ATS. Não foi gerada variante adaptada neste
-incremento; renderização e preservação visual ainda não foram validadas.
+incremento 4a; a validação visual foi adicionada na fase 4b2 descrita abaixo.
 
 ## Edição controlada e fatos confirmados (fase 4b1)
 
@@ -276,8 +276,8 @@ fato ou mudança de versão de evidência bloqueiam sua consulta/uso. Metadados 
 em `GET /api/v1/resume-variants/{id}`. Os arquivos permanecem na pasta privada.
 As respostas não aceitam flags de validação enviadas pelo cliente.
 
-Nesta etapa, as variantes têm estado `validation_pending`: a renderização e os
-testes PDF/visuais ainda precisam ser implementados. O relatório informa
+Antes da validação da fase 4b2, as variantes têm estado `validation_pending`. Na entrega 4b1, a renderização e os
+testes PDF/visuais ainda estavam pendentes. O relatório inicial informa
 `not_run` para essas verificações e `can_approve_application=false`.
 Nenhuma variante real do usuário foi gerada para vagas simuladas.
 
@@ -287,3 +287,69 @@ revogação, replay e migrações em PostgreSQL isolado aprovado:
 ```powershell
 Get-Content -Raw scripts/smoke_resume_editor.py | docker exec -i job-hunter-ai-api-1 python -
 ```
+
+## PDF e validação visual ATS (fase 4b2)
+
+O runtime Docker inclui LibreOffice Writer, fontes Carlito/Liberation e Poppler;
+PyMuPDF é usado para analisar o PDF. `RESUME_RENDER_ENABLED=true` habilita a
+validação no Compose. Para execução nativa sem esse runtime, mantenha a variável
+em `false`. O caminho do conversor é configurado no servidor por
+`LIBREOFFICE_BINARY`, nunca recebido do cliente.
+
+Depois de criar uma variante, execute:
+
+- `POST /api/v1/resume-variants/{id}/validate`, com corpo vazio ou `{}`.
+- `GET /api/v1/resume-variants/{id}` para consultar o resultado e os hashes.
+- `GET /api/v1/resume-variants/{id}/pdf` para baixar a prévia autenticada.
+
+As rotas exigem Bearer token. Resultados de validação enviados pelo cliente são
+rejeitados. O download verifica o hash do PDF e as evidências atuais e envia
+`Cache-Control: private, no-store`. Um PDF reprovado pode ser baixado para revisão,
+mas não libera a candidatura. O corpo da resposta informa `validation_complete`;
+a aprovação de candidatura continuará indisponível até a fase 5.
+
+Cada conversão usa uma cópia temporária, um perfil LibreOffice exclusivo e um
+timeout de 45 segundos. Em timeout, o grupo de processos é encerrado no Linux.
+Tokens OAuth, chave de API e credenciais do banco não são herdados pelo conversor.
+Recursos externos vinculados, objetos incorporados, SVG e campos de carregamento
+externo são bloqueados; hyperlinks usuais de contato HTTP(S), mailto e tel são
+preservados. O DOCX mestre e os arquivos de origem não são regravados.
+
+Mestre e variante são renderizados pela mesma engine. As verificações incluem:
+
+- Mesma quantidade e dimensões de páginas, texto dentro da página e posições de
+  âncoras protegidas, imagens e formas, com tolerância de 1,5 ponto.
+- Texto editado contido na área original, sem deslocar os demais campos.
+- Extração de todos os campos em ordem de leitura e comparação do texto completo
+  do PDF, descontando somente as alterações autorizadas. Texto extra também falha.
+- Integridade do mestre, do DOCX, das evidências e do PDF, verificada novamente
+  depois da conversão. A versão da engine e os hashes da baseline ficam no relatório.
+
+`validated` exige aprovação de todas as cinco verificações: factual, estrutural,
+texto DOCX, visual e texto PDF. Qualquer falha mantém `validation_failed`.
+A renderização desabilitada mantém o rascunho pendente; uma falha de conversão
+produz um código sanitizado no relatório. Repetir uma validação já aprovada
+reutiliza o PDF íntegro. Fatos revogados ou alterados continuam bloqueando o uso.
+
+A avaliação visual é automatizada e conservadora, baseada em geometria e extração
+pela engine registrada. Ela complementa a revisão humana do pacote; não declara
+compatibilidade com todo ATS nem equivalência entre todas as versões do Word.
+Mudanças intencionais de estrutura/paginação continuam fora da autorização atual.
+
+Parâmetros e interfaces seguem as referências oficiais de
+[LibreOffice](https://help.libreoffice.org/latest/en-GB/text/shared/guide/start_parameters.html)
+e [PyMuPDF](https://pymupdf.readthedocs.io/en/latest/page.html).
+
+Validação executada: 107 testes aprovados, lint e formatação aprovados. O smoke
+com LibreOffice real e PostgreSQL isolado aceita uma edição válida, bloqueia uma
+alteração que quebra o layout, verifica replay e o download privado:
+
+```powershell
+Get-Content -Raw scripts/smoke_pdf.py | docker exec -i job-hunter-ai-api-1 python -
+```
+
+As imagens de QA ficam privadas em `var/private/resumes/qa/synthetic-render/`.
+Também foi verificada a conversão da baseline do mestre real: duas páginas,
+44 âncoras e extração textual aprovadas, com inspeção das imagens e SHA-256 do
+DOCX inalterado. Isso valida a baseline do ambiente, não uma adaptação real para
+vaga. Nenhuma variante do CV pessoal foi gerada para candidaturas fictícias.

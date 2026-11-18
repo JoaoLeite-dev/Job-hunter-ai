@@ -21,7 +21,7 @@ As especificações originais permanecem em [REQUIREMENTS.md](../REQUIREMENTS.md
 
 Os resultados de cada fase e limitações de ambiente são registrados no README.
 SQLite é usado para testes locais rápidos; não substitui a validação em PostgreSQL.
-Tabelas de variantes, aprovações e entregas serão adicionadas nas fases
+Tabelas de aprovações e entregas serão adicionadas nas fases
 correspondentes, antes de disponibilizar as respectivas operações.
 
 ## Andamento
@@ -33,5 +33,5 @@ correspondentes, antes de disponibilizar as respectivas operações.
 - Fase 3b pendente: consentimento inicial OAuth, escolha da planilha e validação com conta real.
 - Fase 4a concluída: pasta privada, importação imutável, cadastro, manifesto proposto e autorização por campos; 55 testes e smoke PostgreSQL aprovados.
 - Fase 4b1 concluída: campos autorizados e fatos confirmados pelo usuário; editor de texto com evidências, validação estrutural, variantes idempotentes e 86 testes.
-- Fase 4b2 pendente: renderização, PDF e validação visual/ATS. Variantes continuam bloqueadas até concluir essas verificações.
+- Fase 4b2 concluída: LibreOffice no Docker, PDF privado, verificações de geometria/texto, integridade e 107 testes; smoke real PostgreSQL e baseline do mestre aprovados.
 - Fases 5–6 pendentes conforme dependências acima.

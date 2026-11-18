@@ -13,6 +13,7 @@ from job_hunter.application.demo import run_demo
 from job_hunter.application.sheets_sync import retry_failed, sync
 from job_hunter.config import Settings
 from job_hunter.infrastructure.db import Job, Match
+from job_hunter.infrastructure.document_renderer import LibreOfficeRenderer
 from job_hunter.infrastructure.sheets import GoogleSheets, SheetsError
 
 
@@ -23,6 +24,9 @@ def create_app(settings: Settings | None = None) -> Flask:
     app.extensions["db_engine"] = engine
     app.extensions["session_factory"] = sessionmaker(engine)
     app.extensions["settings"] = settings
+    app.extensions["document_renderer_factory"] = lambda: LibreOfficeRenderer(
+        settings.libreoffice_binary
+    )
     app.extensions["sheets_gateway_factory"] = GoogleSheets.from_env
     app.config["MAX_CONTENT_LENGTH"] = 1024 * 1024
 

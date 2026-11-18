@@ -2,8 +2,13 @@
 
 from pathlib import Path
 
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, current_app, jsonify, request, send_file
 
+from job_hunter.application.resume_validation import (
+    validate_variant,
+    validation_complete,
+    verify_pdf,
+)
 from job_hunter.application.resume_variants import (
     confirm_template_facts,
     confirm_wording,
@@ -22,7 +27,11 @@ def root() -> Path:
 
 def error_response(error):
     code = str(error)
-    status = 404 if code in {"template_not_found", "job_not_found"} else 409
+    status = (
+        404
+        if code in {"template_not_found", "job_not_found", "variant_not_found", "pdf_not_available"}
+        else 409
+    )
     return jsonify(error=code), status
 
 
@@ -35,7 +44,9 @@ def serialize(variant):
         "state": variant.state,
         "validation": variant.validation_json,
         "can_approve_application": False,
-        "pdf_available": False,
+        "pdf_available": bool(variant.pdf_key and variant.sha256_pdf),
+        "sha256_pdf": variant.sha256_pdf,
+        "validation_complete": validation_complete(variant),
     }
 
 
@@ -94,6 +105,8 @@ def get_variant(variant_id):
             if not variant:
                 return jsonify(error="variant_not_found"), 404
             verify_current_variant(session, root(), variant)
+            if variant.pdf_key:
+                verify_pdf(root(), variant)
             return jsonify(serialize(variant))
     except ResumeError as error:
         return error_response(error)
@@ -115,3 +128,42 @@ def confirm_cv_facts(template_id):
     except ResumeError as error:
         return error_response(error)
     return jsonify(result)
+
+
+@blueprint.post("/api/v1/resume-variants/<variant_id>/validate")
+def validate_document(variant_id):
+    if request.get_data() and request.get_json(silent=True) != {}:
+        return jsonify(error="validation_results_cannot_be_supplied"), 400
+    if not current_app.extensions["settings"].resume_render_enabled:
+        return jsonify(error="document_renderer_disabled"), 409
+    try:
+        renderer = current_app.extensions["document_renderer_factory"]()
+        with current_app.extensions["session_factory"].begin() as session:
+            variant = validate_variant(session, root(), variant_id, renderer)
+            result = serialize(variant)
+    except ResumeError as error:
+        return error_response(error)
+    return jsonify(result)
+
+
+@blueprint.get("/api/v1/resume-variants/<variant_id>/pdf")
+def download_pdf(variant_id):
+    try:
+        with current_app.extensions["session_factory"]() as session:
+            variant = session.get(ResumeVariant, variant_id)
+            if not variant:
+                return jsonify(error="variant_not_found"), 404
+            verify_current_variant(session, root(), variant)
+            path = verify_pdf(root(), variant)
+            response = send_file(
+                path,
+                mimetype="application/pdf",
+                as_attachment=True,
+                download_name="resume.pdf",
+                conditional=False,
+                max_age=0,
+            )
+            response.headers["Cache-Control"] = "private, no-store"
+            return response
+    except ResumeError as error:
+        return error_response(error)

@@ -3,6 +3,8 @@ x-app: &app
   volumes:
     - ./var/private/resumes:/app/var/private/resumes
   environment:
+    RESUME_RENDER_ENABLED: ${RESUME_RENDER_ENABLED:-true}
+    LIBREOFFICE_BINARY: /usr/bin/libreoffice
     RESUME_STORAGE_ROOT: /app/var/private/resumes
     DATABASE_URL: postgresql+psycopg://jobhunter:local@db:5432/jobhunter
     REDIS_URL: redis://redis:6379/0

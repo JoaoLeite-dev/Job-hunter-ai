@@ -10,7 +10,7 @@ requires-python = ">=3.11"
 dependencies = [
   "Flask>=3.0,<4", "SQLAlchemy>=2.0,<3", "alembic>=1.14,<2",
   "psycopg[binary]>=3.2,<4", "celery[redis]>=5.4,<6", "tzdata>=2025.1",
-  "google-auth[requests]>=2.38,<3",
+  "google-auth[requests]>=2.38,<3", "PyMuPDF>=1.24,<2",
 ]
 
 [project.optional-dependencies]
