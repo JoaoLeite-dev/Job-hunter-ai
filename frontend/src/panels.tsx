@@ -18,8 +18,10 @@ export function Jobs({
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
   const [origin, setOrigin] = useState("all");
+  const [market, setMarket] = useState("all");
   const filtered = jobs.filter(
     (j) =>
+      (market === "all" || (!j.is_demo && j.market === market)) &&
       (origin === "all" || (origin === "demo" ? j.is_demo : !j.is_demo)) &&
       (filter === "all" || j.eligibility.status === filter) &&
       `${j.company} ${j.title}`
@@ -37,6 +39,16 @@ export function Jobs({
           ) : null}
         </div>
         <div className="filters">
+          <select
+            aria-label="Filtrar mercado"
+            value={market}
+            onChange={(e) => setMarket(e.target.value)}
+          >
+            <option value="all">Todos os mercados</option>
+            <option value="brazil">Brasil</option>
+            <option value="international">Exterior / internacional</option>
+            <option value="unknown">Região a confirmar</option>
+          </select>
           <select
             aria-label="Filtrar origem"
             value={origin}
@@ -93,6 +105,16 @@ export function Jobs({
                         ? " · perfil sintético"
                         : " · score preliminar"}
                     </span>
+                    {!job.is_demo ? (
+                      <span className="muted small">
+                        Mercado:{" "}
+                        {job.market === "brazil"
+                          ? "Brasil"
+                          : job.market === "international"
+                            ? "Exterior / internacional"
+                            : "A confirmar"}
+                      </span>
+                    ) : null}
                   </td>
                   <td className="job-modality">{modality(job)}</td>
                   <td>
@@ -136,6 +158,7 @@ export function Jobs({
                 setQuery("");
                 setFilter("all");
                 setOrigin("all");
+                setMarket("all");
               }}
             >
               Limpar filtros

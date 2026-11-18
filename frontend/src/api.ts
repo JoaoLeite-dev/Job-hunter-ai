@@ -11,6 +11,7 @@ export type Job = {
   is_demo: boolean;
   source_name: string;
   source_location: string;
+  market: "brazil" | "international" | "unknown";
   score_notice: string;
   score: number | null;
   discovered_at: string;

@@ -390,3 +390,11 @@ real amplia essa validação, conforme documentação abaixo. Referência visual
 ## Busca real local — fase 2b1
 
 Remotive integrada e ambiente Docker atualizado localmente, com PostgreSQL persistente. O painel principal em `http://127.0.0.1:5000` substitui a prévia isolada da etapa UI-1. Não haverá hospedagem em nuvem. Veja [configuração, limitações e testes](docs/LOCAL_DISCOVERY.md).
+
+## Preferências da busca
+
+Use **Configurar busca** no painel para definir fontes, cargos, palavras-chave,
+exclusões e mercados Brasil/exterior. A prévia testa o cache sem consultar a rede.
+As regras ficam no banco local e valem para a próxima busca manual ou agendada.
+Consulte [regras, limites e API](docs/SEARCH_SETTINGS.md). Sugestões por IA foram
+adiadas conforme sua escolha.

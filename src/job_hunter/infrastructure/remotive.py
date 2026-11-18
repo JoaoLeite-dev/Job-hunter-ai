@@ -9,6 +9,7 @@ from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from job_hunter.application.matching import canonicalize
+from job_hunter.application.search_configuration import contains, normalized
 
 ENDPOINT = "https://remotive.com/api/remote-jobs?category=software-dev"
 MAX_BYTES = 10_000_000
@@ -148,18 +149,21 @@ SKILLS = {
 }
 
 
-def normalize_jobs(payload: dict, roles: str, fetched_at: str) -> list[dict]:
+def normalize_jobs(
+    payload: dict, roles: str, fetched_at: str, *, exclude_junior=True
+) -> list[dict]:
     validate_payload(payload)
-    terms = [re.sub(r"[-_/]+", " ", x.strip().casefold()) for x in roles.split(",") if x.strip()]
+    terms = [normalized(x) for x in roles.split(",") if x.strip()]
     if not terms:
         raise SourceError("source_roles_missing")
     records = []
     for item in payload["jobs"]:
         try:
             title = plain_text(item["title"])
-            title_search = re.sub(r"[-_/]+", " ", title.casefold())
-            if not any(term in title_search for term in terms) or re.search(
-                r"\b(junior|jr|intern|internship|trainee|est[aá]gio)\b", title_search
+            title_search = normalized(title)
+            if not any(contains(title_search, term) for term in terms) or (
+                exclude_junior
+                and re.search(r"\b(junior|jr|intern|internship|trainee|est[aá]gio)\b", title_search)
             ):
                 continue
             company = plain_text(item["company_name"])

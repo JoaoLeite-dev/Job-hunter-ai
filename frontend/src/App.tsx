@@ -13,6 +13,7 @@ import {
   type Job,
 } from "./api";
 import { NAV, Icon, Brand, Loading, currentView, type View } from "./ui";
+import SearchSettings from "./SearchSettings";
 import {
   Jobs,
   ResumeCard,
@@ -177,10 +178,13 @@ export default function App() {
         duplicates: number;
         updated?: number;
         cached?: boolean;
+        paused?: boolean;
       }>("/api/v1/discovery/run", { method: "POST" }, auth.csrf_token);
       await refresh();
       setToast(
-        `Busca concluída: ${result.created} novas vagas; ${result.duplicates} já existentes.${result.cached ? " Cache local reutilizado (consulta à fonte a cada 6 horas)." : ""}`,
+        result.paused
+          ? "Busca pausada nas preferências. Ative a busca e selecione uma fonte em Configurar busca."
+          : `Busca concluída: ${result.created} novas vagas; ${result.duplicates} já existentes.${result.cached ? " Cache local reutilizado (consulta à fonte a cada 6 horas)." : ""}`,
       );
     } catch {
       setToast(
@@ -315,7 +319,9 @@ export default function App() {
                         ? "Cada candidatura, uma decisão"
                         : view === "atividade"
                           ? "Seu fluxo, passo a passo"
-                          : "Suas integrações"}
+                          : view === "busca"
+                            ? "Sua busca, do seu jeito"
+                            : "Suas integrações"}
               </h1>
               <p>
                 {view === "overview"
@@ -328,7 +334,9 @@ export default function App() {
                         ? "Acompanhe os pacotes preparados para sua revisão individual."
                         : view === "atividade"
                           ? "Consulte o histórico dos passos registrados no seu espaço."
-                          : "Veja o que está disponível no seu ambiente local."}
+                          : view === "busca"
+                            ? "Defina fontes, cargos e mercados antes de procurar oportunidades."
+                            : "Veja o que está disponível no seu ambiente local."}
               </p>
             </div>
             {view === "overview" || view === "vagas" ? (
@@ -393,6 +401,8 @@ export default function App() {
                 </>
               ) : view === "vagas" ? (
                 <Jobs jobs={data.jobs} onSelect={setJob} />
+              ) : view === "busca" ? (
+                <SearchSettings csrf={auth.csrf_token} />
               ) : view === "curriculo" ? (
                 <Curriculum
                   data={data}

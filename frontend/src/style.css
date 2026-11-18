@@ -440,6 +440,7 @@ select {
 }
 .filters {
   display: flex;
+  flex-wrap: wrap;
   margin-left: auto;
   align-items: center;
   gap: 14px;
@@ -1771,5 +1772,111 @@ td {
     scroll-behavior: auto !important;
     animation: none !important;
     transition: none !important;
+  }
+}
+.search-settings {
+  display: grid;
+  gap: 24px;
+}
+.search-controls {
+  display: grid;
+  gap: 24px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.search-section {
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+}
+.search-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+}
+.search-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.search-field label {
+  font-weight: 600;
+}
+.search-field textarea {
+  font: inherit;
+  color: inherit;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 12px;
+  resize: vertical;
+  width: 100%;
+  min-height: 80px;
+  background: white;
+}
+.search-field select {
+  width: 100%;
+  min-height: 42px;
+}
+.check-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  min-height: 40px;
+}
+.check-line input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--blue);
+  flex-shrink: 0;
+}
+.source-choice {
+  border: 1px solid var(--border);
+  padding: 16px;
+  border-radius: 8px;
+}
+.source-choice p {
+  color: var(--muted);
+  padding-left: 28px;
+  line-height: 1.6;
+}
+.market-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 28px;
+}
+.search-save {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.search-preview {
+  background: #f5f7fc;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.search-preview ul {
+  padding-left: 20px;
+}
+.search-section code {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 720px) {
+  .search-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .search-section {
+    padding: 18px;
+  }
+  .search-save > .button {
+    width: 100%;
   }
 }

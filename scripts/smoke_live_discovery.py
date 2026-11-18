@@ -14,6 +14,12 @@ from sqlalchemy.orm import Session
 from sqlalchemy.schema import CreateSchema, DropSchema
 
 from job_hunter.application.live_discovery import cached_source, run_live
+from job_hunter.application.search_configuration import (
+    ConfigurationConflict,
+    defaults,
+    load_config,
+    save_config,
+)
 from job_hunter.config import Settings
 from job_hunter.infrastructure.db import Job, Match, Profile, SourceCache, VerifiedFact, utcnow
 from job_hunter.infrastructure.remotive import SourceError
@@ -64,6 +70,30 @@ try:
     assert run_live(engine, settings, fetch)["created"] == 1
     assert run_live(engine, settings, fetch)["duplicates"] == 1
     assert len(calls) == 1
+    config = defaults(settings)
+    config["markets"] = ["brazil"]
+    with Session(engine) as db, db.begin():
+        save_config(db, "smoke-owner", settings, 0, config)
+    assert run_live(engine, settings, fetch)["matched_records"] == 0
+    outcomes = []
+
+    def save_competing_config():
+        try:
+            with Session(engine) as db, db.begin():
+                save_config(db, "smoke-owner", settings, 1, config)
+            outcomes.append("saved")
+        except ConfigurationConflict:
+            outcomes.append("conflict")
+
+    contenders = [Thread(target=save_competing_config) for _ in range(2)]
+    for contender in contenders:
+        contender.start()
+    for contender in contenders:
+        contender.join(10)
+    assert sorted(outcomes) == ["conflict", "saved"]
+    with Session(engine) as db, db.begin():
+        current = load_config(db, "smoke-owner", settings)
+        save_config(db, "smoke-owner", settings, current["version"], defaults(settings))
     with Session(engine) as db, db.begin():
         assert db.scalar(select(Match)).profile_id == "smoke-owner"
         assert db.scalar(select(Job)).last_verified_at is not None
@@ -95,7 +125,10 @@ try:
         release.set()
         worker.join(10)
     assert len(results) == 1 and not worker.is_alive()
-    print("POSTGRES_DISCOVERY_SMOKE_PASSED migration=0005 replay=ok concurrency=ok stale=blocked")
+    print(
+        "POSTGRES_DISCOVERY_SMOKE_PASSED migration=0006 replay=ok "
+        "cache_concurrency=ok config_concurrency=ok market_filter=ok stale=blocked"
+    )
 finally:
     engine.dispose()
     os.environ["DATABASE_URL"] = original

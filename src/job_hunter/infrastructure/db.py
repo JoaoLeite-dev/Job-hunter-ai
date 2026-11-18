@@ -55,6 +55,13 @@ class VerifiedFact(Base):
     version: Mapped[int] = mapped_column(Integer, default=1)
 
 
+class SearchConfiguration(Base):
+    __tablename__ = "search_configurations"
+    profile_id: Mapped[str] = mapped_column(ForeignKey("profiles.id"), primary_key=True)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    config: Mapped[dict] = mapped_column(JSON, nullable=False)
+
+
 class Job(Base):
     __tablename__ = "jobs"
     __table_args__ = (UniqueConstraint("source_id", "external_id"),)

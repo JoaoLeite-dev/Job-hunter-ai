@@ -8,6 +8,7 @@ from sqlalchemy import func, select
 
 from job_hunter.application.demo import DEMO_PROFILE_ID
 from job_hunter.application.matching import eligibility
+from job_hunter.application.search_configuration import market_for
 from job_hunter.infrastructure.db import (
     Application,
     AuditEvent,
@@ -30,6 +31,8 @@ def iso(value):
 
 
 EVENT_LABELS = {
+    "search.configuration_saved": "Preferências de busca salvas",
+    "search.executed": "Filtros de busca aplicados",
     "resume.imported": "Currículo mestre importado",
     "resume.fields_authorized": "Campos de edição autorizados",
     "resume.facts_confirmed": "Fatos do currículo confirmados",
@@ -123,6 +126,7 @@ def dashboard():
                         "source_name", "Demonstração" if demo else job.source_id
                     ),
                     "source_location": job.data.get("source_location", ""),
+                    "market": market_for(job.data),
                     "score_notice": job.data.get("score_notice", ""),
                 }
             )

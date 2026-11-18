@@ -50,3 +50,12 @@ concluídas as fases de análise GPT, aprovação de pacotes ou envio.
 ## Operação exclusivamente local e busca real
 
 Aplicação e banco permanecem no computador do usuário. Não haverá deploy em nuvem. A fase 2b1 conecta Remotive ao painel e ao agendamento; quatro vagas reais persistidas, 129 testes e smoke PostgreSQL aprovados. O painel principal em `http://127.0.0.1:5000` substitui a prévia isolada da porta 5001. Veja [operação e busca local](LOCAL_DISCOVERY.md). GPT é o próximo incremento.
+
+## Incremento 2b1-config — preferências de busca
+
+Configuração por perfil no PostgreSQL local, migração `0006`, fontes integradas,
+termos de cargo/palavras/exclusões, mercados Brasil/exterior/a confirmar e filtro
+de elegibilidade. Prévia no cache sem rede; mesma configuração no botão e worker;
+versão evita sobrescrita entre abas. 157 testes aprovados e build frontend validado.
+Detalhes em [SEARCH_SETTINGS.md](SEARCH_SETTINGS.md). A opção escolhida pelo usuário
+foi concluir primeiro as configurações sem IA; sugestões por IA seguem pendentes.

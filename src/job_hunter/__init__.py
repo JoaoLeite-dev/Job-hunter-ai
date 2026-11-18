@@ -13,6 +13,7 @@ from job_hunter.api.dashboard import blueprint as dashboard_blueprint
 from job_hunter.api.resume_variants import blueprint as variant_blueprint
 from job_hunter.api.resumes import blueprint as resume_blueprint
 from job_hunter.api.resumes import profile_create, resume_import, resume_inspect
+from job_hunter.api.search_configuration import blueprint as search_configuration_blueprint
 from job_hunter.api.web import blueprint as web_blueprint
 from job_hunter.api.web import browser_authenticated, csrf_valid
 from job_hunter.application.demo import run_demo
@@ -183,6 +184,7 @@ def create_app(settings: Settings | None = None) -> Flask:
 
     app.register_blueprint(web_blueprint)
     app.register_blueprint(dashboard_blueprint)
+    app.register_blueprint(search_configuration_blueprint)
     app.register_blueprint(resume_blueprint)
     app.register_blueprint(variant_blueprint)
     for command in [profile_create, resume_import, resume_inspect]:

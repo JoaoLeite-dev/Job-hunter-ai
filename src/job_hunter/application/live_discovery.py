@@ -8,8 +8,9 @@ from sqlalchemy.orm import Session
 
 from job_hunter.application.demo import DEMO_PROFILE_ID
 from job_hunter.application.discovery import Discovery
+from job_hunter.application.search_configuration import load_config, select_records
 from job_hunter.infrastructure.db import AuditEvent, Profile, ResumeTemplate, SourceCache, utcnow
-from job_hunter.infrastructure.remotive import SourceError, fetch_public_jobs, normalize_jobs
+from job_hunter.infrastructure.remotive import SourceError, fetch_public_jobs
 
 SOURCE_ID = "remotive"
 INTERVAL = timedelta(hours=6)
@@ -87,6 +88,16 @@ def cached_source(engine, fetch=fetch_public_jobs, now=None):
 def run_live(engine, settings, fetch=fetch_public_jobs):
     with Session(engine) as db:
         profile_id = profile_id_for(db, settings.discovery_profile_id)
+        preferences = load_config(db, profile_id, settings)
+    config = preferences["config"]
+    if not config["enabled"] or not config["sources"]:
+        return {
+            "created": 0,
+            "duplicates": 0,
+            "matched_records": 0,
+            "paused": True,
+            "search_config_version": preferences["version"],
+        }
     try:
         payload, metadata = cached_source(engine, fetch)
     except SourceError as error:
@@ -100,7 +111,24 @@ def run_live(engine, settings, fetch=fetch_public_jobs):
                 )
             )
         raise
-    records = normalize_jobs(payload, settings.discovery_roles, metadata["fetched_at"])
+    records = select_records(payload, config, metadata["fetched_at"])
     with Session(engine) as db, db.begin():
         result = Discovery(db).run(profile_id, {SOURCE_ID: lambda: records})
-    return {**result, **metadata, "matched_records": len(records), "profile_id": profile_id}
+        db.add(
+            AuditEvent(
+                actor="discovery",
+                entity_id=profile_id,
+                event_type="search.executed",
+                payload_redacted={
+                    "configuration_version": preferences["version"],
+                    "matched_records": len(records),
+                },
+            )
+        )
+    return {
+        **result,
+        **metadata,
+        "matched_records": len(records),
+        "profile_id": profile_id,
+        "search_config_version": preferences["version"],
+    }

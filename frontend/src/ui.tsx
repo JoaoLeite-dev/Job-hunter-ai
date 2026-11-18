@@ -5,10 +5,12 @@ export type View =
   | "curriculo"
   | "candidaturas"
   | "atividade"
-  | "integracoes";
+  | "integracoes"
+  | "busca";
 export const NAV: { id: View; label: string; icon: string }[] = [
   { id: "overview", label: "Visão geral", icon: "home" },
   { id: "vagas", label: "Vagas", icon: "search" },
+  { id: "busca", label: "Configurar busca", icon: "compass" },
   { id: "curriculo", label: "Currículo", icon: "file" },
   { id: "candidaturas", label: "Candidaturas", icon: "check" },
   { id: "atividade", label: "Atividade", icon: "pulse" },
