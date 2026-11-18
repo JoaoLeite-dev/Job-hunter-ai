@@ -84,7 +84,7 @@ revalidação/histórico de alterações será um incremento antes de fontes rea
 - Fase 2b: fontes reais autorizadas, paginação/backoff, filtros configuráveis,
   revalidação de anúncios e integração OpenAI com schema, limites e credenciais.
 - Fase 3b: consentimento inicial Google e teste com uma planilha real.
-- Fase 4: requer DOCX mestre real, fatos confirmados e manifesto aprovado.
+- Fase 4b: edição após manifesto aprovado, fatos confirmados e validação visual/ATS.
 - Fases 5/6: aprovação por hash, Gmail, limites e operação assistida.
 
 A implementação atual não atende ainda ao fluxo completo de candidatura.
@@ -175,3 +175,66 @@ Validação desta fase: 31 testes aprovados, lint/formatação aprovados, smoke
 PostgreSQL de Sheets aprovado e smoke de regressão da descoberta/Redis/Celery
 aprovado. `alembic check` não detectou divergências no PostgreSQL. Nenhuma
 conta Google foi conectada nem planilha real modificada durante os testes.
+
+## Currículo privado e manifesto (fase 4a)
+
+Coloque o DOCX mestre em `var/private/resumes/`. A pasta inteira, seus manifests,
+cópias e recibos estão no `.gitignore`; DOCX na raiz também são ignorados.
+O `.dockerignore` impede que esses arquivos entrem no build da imagem. No Compose,
+a pasta é montada em `/app/var/private/resumes`, sem incorporar dados pessoais
+na imagem. O caminho é configurável por `RESUME_STORAGE_ROOT`.
+
+```powershell
+flask --app job_hunter:create_app resume-inspect --source-name cv-master.docx
+flask --app job_hunter:create_app profile-create --name "Perfil principal"
+flask --app job_hunter:create_app resume-import --source-name cv-master.docx --profile-id <id>
+```
+
+A inspeção não precisa de perfil nem de acesso ao banco. Ela cria uma cópia
+binária idêntica em `templates/<sha256>/master.docx`, o inventário completo em
+`manifest.draft.json` e uma seleção legível em `manifest.review.md`, todos
+privados. O arquivo fornecido não é regravado. Reimportações com o mesmo conteúdo
+e perfil reutilizam o registro; cópias corrompidas são bloqueadas sem sobrescrita.
+Um rollback de banco pode deixar um snapshot privado sem registro: reimporte
+para associá-lo novamente, sem alterar o original.
+
+O manifesto identifica cada nó textual, caminho XML, estilo, texto original,
+hash e limite de caracteres. As sugestões são conservadoras: trechos narrativos
+de resumo, bullets sem números e descrições de projetos. Identificação, contatos,
+datas, números, cabeçalhos, formação, listas de tecnologias e estruturas complexas
+ficam protegidos. Campos em tabelas ou com hyperlinks/objetos exigem mapeamento
+manual em um incremento futuro. Alterações rastreadas impedem candidatar campos.
+
+Rotas autenticadas adicionadas:
+
+- `POST /api/v1/resume-templates/import`: `{profile_id, source_name}`; aceita
+  somente um nome de arquivo dentro da pasta privada, sem caminhos arbitrários.
+- `GET /api/v1/resume-templates/{id}`: metadados e manifesto para revisão.
+- `POST /api/v1/resume-templates/{id}/approve-manifest`: `{manifest_hash, field_ids}`;
+  autoriza exclusivamente os campos selecionados. Hash divergente, template
+  modificado ou seleção de campo protegido retorna `409`.
+
+O manifesto proposto tem `approval=null`. A autorização é uma ação explícita do
+usuário, vinculada ao template exato. A aprovação de campos não confirma fatos,
+não valida o layout e não autoriza candidatura ou envio. A API não oferece
+download público nem geração de variantes neste incremento. O JSON retornado
+contém texto privado: use a API apenas no ambiente local autenticado.
+
+A migração `0003` adiciona o cadastro de templates. Os testes usam somente dados
+sintéticos, incluindo runs com estilos distintos, tabelas, cabeçalhos, dados
+protegidos, arquivos inválidos, macros, XML inseguro e tentativas de path traversal.
+O smoke abaixo testa importação privada e migração PostgreSQL num schema isolado:
+
+```powershell
+Get-Content -Raw scripts/smoke_resume.py | docker exec -i job-hunter-ai-api-1 python - cv-master.docx
+```
+
+Validação executada: 55 testes aprovados, lint/formatação aprovados, importação
+do DOCX real preservando o SHA-256, reimportação idempotente, bloqueio de campos
+protegidos e upgrade/downgrade/upgrade no PostgreSQL aprovados. A descoberta e o
+worker também passaram no teste de regressão. Nenhum fato profissional nem campo
+do CV real foi autorizado automaticamente; nenhum trecho do CV foi versionado.
+
+A fase 4b implementará a edição de campos autorizados, fatos confirmados, exportação
+PDF e validações estrutural, visual e ATS. Não foi gerada variante adaptada neste
+incremento; renderização e preservação visual ainda não foram validadas.

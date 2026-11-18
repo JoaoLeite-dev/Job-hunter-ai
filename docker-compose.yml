@@ -1,6 +1,9 @@
 x-app: &app
   build: .
+  volumes:
+    - ./var/private/resumes:/app/var/private/resumes
   environment:
+    RESUME_STORAGE_ROOT: /app/var/private/resumes
     DATABASE_URL: postgresql+psycopg://jobhunter:local@db:5432/jobhunter
     REDIS_URL: redis://redis:6379/0
     API_TOKEN: ${API_TOKEN:?Configure API_TOKEN in .env}

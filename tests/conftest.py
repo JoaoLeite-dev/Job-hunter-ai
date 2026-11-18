@@ -7,6 +7,7 @@ from job_hunter import create_app
 
 @pytest.fixture
 def app(tmp_path, monkeypatch):
+    monkeypatch.setenv("RESUME_STORAGE_ROOT", str(tmp_path / "private-resumes"))
     monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 'test.db'}")
     monkeypatch.setenv("API_TOKEN", "test-token")
     monkeypatch.setenv("EMAIL_SEND_ENABLED", "false")

@@ -12,3 +12,7 @@ templates/*.docx
 *.db
 coverage.xml
 .coverage
+
+# Private CV sources, copies, manifests and future generated variants.
+/var/private/resumes/
+/*.docx

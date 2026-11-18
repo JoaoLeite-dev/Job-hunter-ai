@@ -108,3 +108,15 @@ class Outbox(Base):
     next_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_error_code: Mapped[str | None] = mapped_column(String(100))
     terminal_failure: Mapped[bool] = mapped_column(default=False, server_default=false())
+
+
+class ResumeTemplate(Base):
+    __tablename__ = "resume_templates"
+    __table_args__ = (UniqueConstraint("profile_id", "sha256", name="uq_resume_profile_sha256"),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    profile_id: Mapped[str] = mapped_column(ForeignKey("profiles.id"))
+    storage_key: Mapped[str] = mapped_column(Text)
+    sha256: Mapped[str] = mapped_column(String(64))
+    manifest_json: Mapped[dict] = mapped_column(JSON)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    active: Mapped[bool] = mapped_column(default=False)
