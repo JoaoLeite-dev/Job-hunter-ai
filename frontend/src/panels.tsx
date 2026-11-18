@@ -100,6 +100,10 @@ export function Jobs({
                     <strong>{job.company}</strong>
                     <span>{job.title}</span>
                     <span className="muted small">
+                      {job.is_demo ? "Data simulada" : "Publicação"}:{" "}
+                      {time(job.published_at)}
+                    </span>
+                    <span className="muted small">
                       Fonte: {job.source_name}
                       {job.is_demo
                         ? " · perfil sintético"
@@ -167,9 +171,11 @@ export function Jobs({
         </div>
       )}
       <div className="table-note">
-        Vagas reais: pontuação preliminar por tags da fonte e fatos confirmados.
-        Demonstrações usam um perfil sintético. A elegibilidade reflete a
-        política informada pela fonte.
+        Apenas publicações dos últimos 30 dias, com data conhecida. Anúncios
+        antigos, futuros ou sem data não aparecem. Vagas reais: pontuação
+        preliminar por tags da fonte e fatos confirmados. Demonstrações usam um
+        perfil sintético. A elegibilidade reflete a política informada pela
+        fonte.
         {jobs.length >= 200 ? <span>Últimas 200 vagas no painel.</span> : null}
       </div>
     </section>
@@ -293,14 +299,14 @@ export function Integrations({ data }: { data: Dashboard }) {
       icon: "search",
       state:
         data.integrations.discovery_mode === "live"
-          ? "Remotive conectada"
+          ? "Busca real habilitada"
           : data.integrations.discovery_mode === "fixture"
             ? "Demonstração"
             : "Não configuradas",
       tone: "blue",
       description:
         data.integrations.discovery_mode === "live"
-          ? "API pública Remotive, com cache no banco local por 6 horas e links de origem. Anúncios têm atraso de 24 horas na API. Filtros de cargo são configuráveis no ambiente."
+          ? "Remotive, InfoJobs e Vagas.com disponíveis em Configurar busca. Veja ali as consultas e falhas por fonte. LinkedIn e outros portais têm consulta assistida, sem importação automática."
           : "Vagas de exemplo para conhecer o fluxo. Busca real desabilitada neste ambiente.",
     },
     {

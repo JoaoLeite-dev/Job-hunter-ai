@@ -15,6 +15,7 @@ export type Job = {
   score_notice: string;
   score: number | null;
   discovered_at: string;
+  published_at: string;
   verified_at: string | null;
   match_profile: string;
   eligibility: { status: string; reason: string };
@@ -52,6 +53,7 @@ export type Variant = {
   validation: Record<string, { status?: string; code?: string }>;
 };
 export type Dashboard = {
+  publication_policy: { max_age_days: number; hidden: number };
   updated_at: string;
   stats: {
     jobs: number;

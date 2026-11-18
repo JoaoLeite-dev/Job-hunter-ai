@@ -75,6 +75,7 @@ class Job(Base):
     status: Mapped[str] = mapped_column(String(40), default="unknown")
     data: Mapped[dict] = mapped_column(JSON, default=dict)
     discovered_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
     last_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 

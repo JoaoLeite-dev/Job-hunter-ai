@@ -54,6 +54,7 @@ Sistema pessoal de prospecção de vagas que pesquisa oportunidades aderentes ao
 | RF-025 | P1 | Configurar limites de envio e fontes | Limites diários, horários, provedores e thresholds editáveis |
 | RF-026 | P2 | Feedback sobre qualidade das correspondências | Ajuste futuro de pesos com histórico, sem alterar fatos confirmados |
 | RF-027 | P2 | Painel web completo | Dashboard de pipeline, métricas, revisão e histórico |
+| RF-028 | P0 | Listar somente publicações com no máximo 30 dias | Data de publicação obrigatória; datas antigas, futuras, inválidas ou desconhecidas ficam fora da coleta, prévia, lista e métricas. Descoberta/atualização não substituem publicação; histórico é preservado. |
 
 **P0:** necessário ao fluxo completo; **P1:** melhoria operacional; **P2:** evolução.
 

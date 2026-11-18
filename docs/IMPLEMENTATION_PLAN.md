@@ -59,3 +59,11 @@ de elegibilidade. Prévia no cache sem rede; mesma configuração no botão e wo
 versão evita sobrescrita entre abas. 157 testes aprovados e build frontend validado.
 Detalhes em [SEARCH_SETTINGS.md](SEARCH_SETTINGS.md). A opção escolhida pelo usuário
 foi concluir primeiro as configurações sem IA; sugestões por IA seguem pendentes.
+
+## Incremento 2b1-portais — coleta pública e atualidade
+
+Coletores HTML InfoJobs/Vagas.com, cache independente por fonte, falhas isoladas,
+origem e data de publicação. Portais com bloqueio ou sem integração autorizada têm
+consulta assistida, sem fingir coleta automática. Migração `0007` e janela obrigatória
+de 30 dias na coleta, prévia, API e painel. 164 testes aprovados; evidências e limites
+em [PORTAL_COLLECTION.md](PORTAL_COLLECTION.md). IA permanece adiada.

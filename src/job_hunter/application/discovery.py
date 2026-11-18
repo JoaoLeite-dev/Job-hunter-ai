@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from job_hunter.application.matching import Fact, canonicalize, score
+from job_hunter.application.publication import publication_time
 from job_hunter.infrastructure.db import AuditEvent, Job, Match, Outbox, Profile, VerifiedFact
 
 
@@ -60,7 +61,11 @@ class Discovery:
                         existing = self.session.scalar(select(Job).where(identity))
                         if existing:
                             # Refresh live evidence while preserving identity/history.
-                            if source_id == "remotive" and existing.source_id == source_id:
+                            if (
+                                source_id
+                                in {"remotive", "infojobs", "vagas", "trabalhabrasil", "indeed"}
+                                and existing.source_id == source_id
+                            ):
                                 result = score(raw, facts)
                                 match = self.session.scalar(
                                     select(Match).where(
@@ -79,6 +84,7 @@ class Discovery:
                                 )
                                 existing.description, existing.data = raw["description"], raw
                                 existing.canonical_url = url
+                                existing.published_at = publication_time(raw.get("published_at"))
                                 existing.status = raw.get("status", "unknown")
                                 existing.last_verified_at = datetime.fromisoformat(
                                     raw["observed_at"]
@@ -120,6 +126,7 @@ class Discovery:
                             description=raw["description"],
                             status=raw.get("status", "unknown"),
                             data=raw,
+                            published_at=publication_time(raw.get("published_at")),
                             last_verified_at=datetime.fromisoformat(raw["observed_at"])
                             if raw.get("observed_at")
                             else None,

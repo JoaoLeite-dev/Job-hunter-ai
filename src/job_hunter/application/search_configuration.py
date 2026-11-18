@@ -7,6 +7,7 @@ from sqlalchemy import update
 from sqlalchemy.exc import IntegrityError
 
 from job_hunter.application.matching import eligibility
+from job_hunter.application.publication import is_recent
 from job_hunter.infrastructure.db import AuditEvent, SearchConfiguration
 
 MARKETS = {"brazil", "international", "unknown"}
@@ -19,6 +20,58 @@ CATALOG = [
         "minimum_interval_hours": 6,
     }
 ]
+CATALOG += [
+    {
+        "id": "infojobs",
+        "name": "InfoJobs",
+        "description": "Coleta HTML pública; primeira página de até 3 cargos por ciclo",
+        "url": "https://www.infojobs.com.br",
+        "minimum_interval_hours": 6,
+    },
+    {
+        "id": "vagas",
+        "name": "Vagas.com",
+        "description": "Coleta HTML pública; primeira página de até 3 cargos por ciclo",
+        "url": "https://www.vagas.com.br",
+        "minimum_interval_hours": 6,
+    },
+    {
+        "id": "linkedin",
+        "name": "LinkedIn — publicações",
+        "description": "Consulta assistida. Coleta automática requer autorização do LinkedIn.",
+        "url": "https://www.linkedin.com/search/results/content/",
+        "automated": False,
+    },
+    {
+        "id": "indeed",
+        "name": "Indeed",
+        "description": "Consulta assistida. O acesso automático retornou HTTP 403; não conectado.",
+        "url": "https://br.indeed.com/jobs",
+        "automated": False,
+    },
+    {
+        "id": "catho",
+        "name": "Catho",
+        "description": "Consulta assistida. O acesso automático retornou HTTP 403; não conectado.",
+        "url": "https://www.catho.com.br/vagas/",
+        "automated": False,
+    },
+    {
+        "id": "gupy",
+        "name": "Gupy",
+        "description": "Consulta assistida; a API documentada requer token da empresa.",
+        "url": "https://portal.gupy.io",
+        "automated": False,
+    },
+    {
+        "id": "trabalhabrasil",
+        "name": "Trabalha Brasil",
+        "description": "Consulta assistida. A listagem consultada não informou datas suficientes.",
+        "url": "https://www.trabalhabrasil.com.br",
+        "automated": False,
+    },
+]
+AUTOMATED_SOURCES = {"remotive", "infojobs", "vagas"}
 
 
 class ConfigurationError(ValueError):
@@ -127,7 +180,7 @@ def validate_config(value, settings):
             result[key] = actual
     if not result["title_terms"] or not result["markets"]:
         raise ConfigurationError("titles_and_markets_required")
-    if not set(result["sources"]) <= {"remotive"} or not set(result["markets"]) <= MARKETS:
+    if not set(result["sources"]) <= AUTOMATED_SOURCES or not set(result["markets"]) <= MARKETS:
         raise ConfigurationError("unsupported_source_or_market")
     if result["keyword_mode"] not in ("any", "all") or result["keyword_scope"] not in (
         "title",
@@ -205,12 +258,20 @@ def accepts(job, config):
     return not config["eligible_only"] or eligibility(job)["status"] == "eligible"
 
 
-def select_records(payload, config, fetched_at):
+def select_records(payload, config, fetched_at, source_id="remotive"):
     from job_hunter.infrastructure.remotive import normalize_jobs
 
-    if not config["enabled"] or "remotive" not in config["sources"]:
+    if not config["enabled"] or source_id not in config["sources"]:
         return []
-    records = normalize_jobs(
-        payload, ",".join(config["title_terms"]), fetched_at, exclude_junior=False
+    records = (
+        [{**job, "observed_at": fetched_at} for job in payload["jobs"]]
+        if payload.get("normalized") is True
+        else normalize_jobs(
+            payload, ",".join(config["title_terms"]), fetched_at, exclude_junior=False
+        )
     )
-    return [{**job, "market": market_for(job)} for job in records if accepts(job, config)]
+    return [
+        {**job, "market": market_for(job)}
+        for job in records
+        if is_recent(job.get("published_at")) and accepts(job, config)
+    ]

@@ -179,12 +179,14 @@ export default function App() {
         updated?: number;
         cached?: boolean;
         paused?: boolean;
+        failed_sources?: string[];
+        sources?: { query_deferred: boolean }[];
       }>("/api/v1/discovery/run", { method: "POST" }, auth.csrf_token);
       await refresh();
       setToast(
         result.paused
           ? "Busca pausada nas preferências. Ative a busca e selecione uma fonte em Configurar busca."
-          : `Busca concluída: ${result.created} novas vagas; ${result.duplicates} já existentes.${result.cached ? " Cache local reutilizado (consulta à fonte a cada 6 horas)." : ""}`,
+          : `Busca ${result.failed_sources?.length ? "parcial" : "concluída"}: ${result.created} novas vagas; ${result.duplicates} já existentes.${result.cached ? " Cache local reutilizado." : ""}${result.failed_sources?.length ? ` Fontes com falha: ${result.failed_sources.join(", ")}.` : ""}${result.sources?.some((s) => s.query_deferred) ? " Novos termos serão consultados no próximo ciclo da fonte (até 6 horas)." : ""}`,
       );
     } catch {
       setToast(
@@ -379,7 +381,10 @@ export default function App() {
                 <>
                   <section className="stats" aria-label="Resumo do espaço">
                     {[
-                      { value: data.stats.jobs, label: "Vagas encontradas" },
+                      {
+                        value: data.stats.jobs,
+                        label: "Publicações em até 30 dias",
+                      },
                       { value: data.stats.eligible, label: "Elegível" },
                       { value: data.stats.applications, label: "Candidaturas" },
                       { value: data.stats.templates, label: "CV mestre" },

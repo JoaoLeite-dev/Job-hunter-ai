@@ -398,3 +398,11 @@ exclusões e mercados Brasil/exterior. A prévia testa o cache sem consultar a r
 As regras ficam no banco local e valem para a próxima busca manual ou agendada.
 Consulte [regras, limites e API](docs/SEARCH_SETTINGS.md). Sugestões por IA foram
 adiadas conforme sua escolha.
+
+## Portais brasileiros e janela de publicação
+
+InfoJobs e Vagas.com agora possuem coleta pública de listagens. Ative as fontes em
+Configurar busca. LinkedIn (publicações), Indeed, Catho, Gupy e Trabalha Brasil têm
+consulta assistida com limitações explícitas; não são apresentados como importação
+automática. A lista e as métricas mostram apenas publicações com data conhecida de
+até 30 dias. Veja [fontes, cobertura e limitações](docs/PORTAL_COLLECTION.md).

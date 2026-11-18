@@ -60,6 +60,7 @@ try:
         "description": "<p>React</p>",
         "candidate_required_location": "LATAM",
         "tags": ["react"],
+        "publication_date": utcnow().isoformat(),
     }
     calls = []
 
@@ -126,7 +127,7 @@ try:
         worker.join(10)
     assert len(results) == 1 and not worker.is_alive()
     print(
-        "POSTGRES_DISCOVERY_SMOKE_PASSED migration=0006 replay=ok "
+        "POSTGRES_DISCOVERY_SMOKE_PASSED migration=0007 replay=ok "
         "cache_concurrency=ok config_concurrency=ok market_filter=ok stale=blocked"
     )
 finally:

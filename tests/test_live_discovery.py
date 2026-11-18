@@ -35,7 +35,7 @@ def record(**changes):
         "description": "<p>Build React interfaces &amp; test.</p><script>do not display</script>",
         "candidate_required_location": "LATAM",
         "tags": ["react", "Typescript "],
-        "publication_date": "2026-11-18T08:00:00",
+        "publication_date": utcnow().isoformat(),
         **changes,
     }
 

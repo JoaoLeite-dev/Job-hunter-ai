@@ -1,6 +1,6 @@
 """Read projections for the local monitoring UI, with explicit synthetic-data provenance."""
 
-from datetime import UTC
+from datetime import UTC, timedelta
 from pathlib import Path
 
 from flask import Blueprint, current_app, jsonify
@@ -78,7 +78,13 @@ def event_view(event):
 def dashboard():
     settings = current_app.extensions["settings"]
     with current_app.extensions["session_factory"]() as db:
-        jobs = list(db.scalars(select(Job).order_by(Job.discovered_at.desc(), Job.id).limit(200)))
+        now = utcnow()
+        recent = (Job.published_at >= now - timedelta(days=30), Job.published_at <= now)
+        jobs = list(
+            db.scalars(
+                select(Job).where(*recent).order_by(Job.published_at.desc(), Job.id).limit(200)
+            )
+        )
         templates = list(db.scalars(select(ResumeTemplate).order_by(ResumeTemplate.id)))
         primary = settings.discovery_profile_id or next(
             (t.profile_id for t in templates if t.active and t.profile_id != DEMO_PROFILE_ID), None
@@ -114,6 +120,7 @@ def dashboard():
                     "remote": job.data.get("remote"),
                     "status": job.status,
                     "discovered_at": iso(job.discovered_at),
+                    "published_at": iso(job.published_at),
                     "verified_at": iso(job.last_verified_at),
                     "is_demo": demo,
                     "eligibility": gate,
@@ -166,19 +173,35 @@ def dashboard():
         eligible_count = sum(
             eligibility({**data, "status": state})["status"] == "eligible"
             for data, state in db.execute(
-                select(Job.data, Job.status).execution_options(yield_per=200)
+                select(Job.data, Job.status).where(*recent).execution_options(yield_per=200)
             )
         )
         return jsonify(
             {
                 "updated_at": iso(utcnow()),
                 "stats": {
-                    "jobs": db.scalar(select(func.count()).select_from(Job)),
+                    "jobs": db.scalar(select(func.count()).select_from(Job).where(*recent)),
                     "eligible": eligible_count,
                     "applications": db.scalar(select(func.count()).select_from(Application)),
                     "templates": len(templates),
                 },
                 "jobs": items,
+                "publication_policy": {
+                    "max_age_days": 30,
+                    "hidden": db.scalar(
+                        select(func.count())
+                        .select_from(Job)
+                        .where(
+                            ~(
+                                (Job.published_at >= now - timedelta(days=30))
+                                & (Job.published_at <= now)
+                            )
+                        )
+                    )
+                    + db.scalar(
+                        select(func.count()).select_from(Job).where(Job.published_at.is_(None))
+                    ),
+                },
                 "templates": template_items,
                 "variants": [
                     {

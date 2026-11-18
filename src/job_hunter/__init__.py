@@ -20,7 +20,7 @@ from job_hunter.application.demo import run_demo
 from job_hunter.application.live_discovery import run_live
 from job_hunter.application.sheets_sync import retry_failed, sync
 from job_hunter.config import Settings
-from job_hunter.infrastructure.db import Job, Match
+from job_hunter.infrastructure.db import Job, Match, utcnow
 from job_hunter.infrastructure.document_renderer import LibreOfficeRenderer
 from job_hunter.infrastructure.remotive import SourceError, fetch_public_jobs
 from job_hunter.infrastructure.sheets import GoogleSheets, SheetsError
@@ -94,7 +94,13 @@ def create_app(settings: Settings | None = None) -> Flask:
     @app.get("/api/v1/jobs")
     def jobs():
         with app.extensions["session_factory"]() as session:
-            rows = session.scalars(select(Job).order_by(Job.id).limit(100))
+            now = utcnow()
+            rows = session.scalars(
+                select(Job)
+                .where(Job.published_at >= now - timedelta(days=30), Job.published_at <= now)
+                .order_by(Job.published_at.desc(), Job.id)
+                .limit(100)
+            )
             return jsonify(
                 items=[
                     {
@@ -103,6 +109,7 @@ def create_app(settings: Settings | None = None) -> Flask:
                         "company": j.company,
                         "canonical_url": j.canonical_url,
                         "status": j.status,
+                        "published_at": j.published_at.isoformat(),
                     }
                     for j in rows
                 ]

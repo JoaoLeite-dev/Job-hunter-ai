@@ -7,10 +7,12 @@ por escolha do usuário.
 
 ## Onde buscar
 
-É possível ativar/pausar a busca e habilitar a fonte Remotive. Ela é a única fonte
-integrada nesta etapa, com feed de desenvolvimento e vagas remotas. Não há pesquisa
-em LinkedIn, Google ou URLs arbitrárias. O intervalo mínimo de seis horas da fonte
-continua fixo. Alterar filtros não força uma nova chamada nem contorna o cache.
+É possível ativar/pausar a busca e habilitar Remotive, InfoJobs e Vagas.com.
+Os dois últimos usam coleta HTML de listagens públicas, limitada a três cargos
+por ciclo e uma página por cargo. LinkedIn e outros portais têm links de consulta
+assistida, sem coleta automática. O ciclo mínimo de seis horas por fonte continua
+fixo. Alterar filtros não força uma nova chamada nem contorna o cache. Veja
+[cobertura e limitações atuais](PORTAL_COLLECTION.md).
 
 Desativar a busca ou desmarcar todas as fontes pausa tanto o botão manual quanto
 a tarefa agendada, sem fazer chamadas à fonte. O horário diário e o fuso ainda
@@ -59,6 +61,10 @@ agendada. As vagas antigas continuam no histórico. Salvar não executa uma busc
 Edições simultâneas são protegidas por versão: uma aba desatualizada recebe conflito
 sem sobrescrever a alteração da outra. Os campos ficam bloqueados durante a
 requisição para não perder edições feitas no meio do salvamento.
+
+A coleta, a prévia e a lista agora exigem data de publicação conhecida de até
+30 dias. Datas futuras, ausentes ou inválidas ficam fora. Alterar regras não
+desativa esse limite; o histórico antigo é mantido no banco.
 
 Antes do primeiro salvamento, os cargos vêm de `DISCOVERY_ROLES`. Depois dele,
 a configuração do perfil no banco prevalece, também no worker. O modo global

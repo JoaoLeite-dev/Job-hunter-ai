@@ -1,4 +1,5 @@
 from collections import Counter
+from urllib.parse import quote, urlencode
 
 from flask import Blueprint, current_app, jsonify, request
 
@@ -18,6 +19,37 @@ from job_hunter.infrastructure.remotive import SourceError
 blueprint = Blueprint("search_configuration", __name__)
 
 
+def source_catalog(db, config):
+    term = " OR ".join(config["title_terms"][:3])
+    result = []
+    for item in CATALOG:
+        row = {**item}
+        if item["id"] == "linkedin":
+            row["search_url"] = (
+                item["url"]
+                + "?"
+                + urlencode(
+                    {"keywords": term, "datePosted": '"past-month"', "sortBy": '"date_posted"'}
+                )
+            )
+        elif item["id"] == "indeed":
+            row["search_url"] = (
+                item["url"] + "?" + urlencode({"q": term, "l": "Brasil", "fromage": 30})
+            )
+        elif item["id"] == "catho":
+            row["search_url"] = item["url"] + quote(config["title_terms"][0], safe="") + "/"
+        else:
+            row["search_url"] = item["url"]
+        cache = db.get(SourceCache, item["id"])
+        row["last_fetched_at"] = (
+            aware(cache.fetched_at).isoformat() if cache and cache.fetched_at else None
+        )
+        row["error_code"] = cache.error_code if cache else None
+        row["queries"] = (cache.payload or {}).get("queries", []) if cache else []
+        result.append(row)
+    return result
+
+
 @blueprint.route("/api/v1/search-settings", methods=["GET", "PUT"])
 def search_settings():
     settings = current_app.extensions["settings"]
@@ -33,7 +65,8 @@ def search_settings():
                 result = load_config(db, profile_id, settings)
             return jsonify(
                 **result,
-                sources=CATALOG,
+                sources=source_catalog(db, result["config"]),
+                publication_max_age_days=30,
                 schedule={"cron": settings.cron, "timezone": settings.timezone},
                 discovery_mode=settings.discovery_mode,
             )
@@ -53,13 +86,25 @@ def preview_search():
             profile_id_for(db, settings.discovery_profile_id)
             body = request.get_json(silent=True)
             config = validate_config(body, settings)
-            cache = db.get(SourceCache, "remotive")
-            if not cache or not cache.payload or not cache.fetched_at:
+            caches = [db.get(SourceCache, identity) for identity in config["sources"]]
+            caches = [cache for cache in caches if cache and cache.payload and cache.fetched_at]
+            if not caches:
                 return jsonify(error="source_cache_missing"), 409
-            observed = aware(cache.fetched_at).isoformat()
-            records = select_records(cache.payload, config, observed)
+            observed = min(aware(cache.fetched_at) for cache in caches).isoformat()
+            records = [
+                row
+                for cache in caches
+                for row in select_records(
+                    cache.payload, config, aware(cache.fetched_at).isoformat(), source_id=cache.id
+                )
+            ]
             return jsonify(
-                scanned=len(cache.payload["jobs"]),
+                scanned=sum(len(cache.payload["jobs"]) for cache in caches),
+                missing_sources=[
+                    identity
+                    for identity in config["sources"]
+                    if identity not in {cache.id for cache in caches}
+                ],
                 matched=len(records),
                 markets=dict(Counter(j["market"] for j in records)),
                 fetched_at=observed,

@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+﻿import { useEffect, useState, type FormEvent } from "react";
 import { api, ApiError } from "./api";
 import { Loading, time } from "./ui";
 
@@ -20,11 +20,22 @@ type Config = {
 type Settings = {
   version: number;
   config: Config;
-  sources: { id: string; name: string; description: string; url: string }[];
+  sources: {
+    id: string;
+    name: string;
+    description: string;
+    url: string;
+    automated?: boolean;
+    search_url: string;
+    last_fetched_at: string | null;
+    error_code: string | null;
+    queries: string[];
+  }[];
   schedule: { cron: string; timezone: string };
   discovery_mode: string;
 };
 type Preview = {
+  missing_sources?: string[];
   scanned: number;
   matched: number;
   fetched_at: string;
@@ -200,28 +211,84 @@ function Editor({
             Desative para pausar novas consultas. As vagas já salvas permanecem
             no histórico.
           </p>
-          {initial.sources.map((source) => (
-            <div className="source-choice" key={source.id}>
-              <label className="check-line">
-                <input
-                  type="checkbox"
-                  checked={config.sources.includes(source.id)}
-                  onChange={() => toggle("sources", source.id)}
-                />
-                {source.name}
-              </label>
-              <p>
-                {source.description}.{" "}
-                <a href={source.url} target="_blank" rel="noopener noreferrer">
-                  Conhecer a fonte
-                </a>
-              </p>
-            </div>
-          ))}
+          {initial.sources
+            .filter((source) => source.automated !== false)
+            .map((source) => (
+              <div className="source-choice" key={source.id}>
+                <label className="check-line">
+                  <input
+                    type="checkbox"
+                    checked={config.sources.includes(source.id)}
+                    onChange={() => toggle("sources", source.id)}
+                  />
+                  {source.name}
+                </label>
+                <p>
+                  {source.description}.{" "}
+                  <a
+                    href={source.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Conhecer a fonte
+                  </a>
+                </p>
+                <p className="help">
+                  Última resposta:{" "}
+                  {source.last_fetched_at
+                    ? time(source.last_fetched_at)
+                    : "Ainda não consultada"}
+                  .{" "}
+                  {source.error_code
+                    ? `Falha na última tentativa: ${source.error_code}.`
+                    : ""}{" "}
+                  {source.queries.length
+                    ? `Termos do cache: ${source.queries.join(", ")}.`
+                    : ""}
+                </p>
+              </div>
+            ))}
           <p className="help">
-            Remotive é a única fonte integrada nesta etapa. Não há busca em
-            LinkedIn, Google ou em sites arbitrários. O feed é consultado no
-            máximo a cada 6 horas; mudar filtros reutiliza o cache.
+            Cada fonte é consultada no máximo uma vez a cada 6 horas. Os
+            coletores HTML consultam somente a primeira página de até 3 cargos
+            distintos, na ordem dos cargos configurados; não cobrem todos os
+            anúncios. Mudar termos pode aguardar o próximo ciclo. Conteúdo
+            resumido exige revisão.
+          </p>
+        </section>
+        <section className="panel search-section">
+          <h2>Portais com consulta assistida</h2>
+          <p className="muted">
+            Estes links abrem o navegador para sua pesquisa. Não coletam
+            publicações nem importam vagas automaticamente. Os links usam as
+            preferências salvas; confirme filtros e datas no portal.
+          </p>
+          {initial.sources
+            .filter((source) => source.automated === false)
+            .map((source) => (
+              <div className="source-choice" key={source.id}>
+                <h3>{source.name}</h3>
+                <p>{source.description}</p>
+                <a
+                  className="button secondary"
+                  href={source.search_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {source.id === "linkedin"
+                    ? "Pesquisar publicações no LinkedIn"
+                    : `Abrir busca · ${source.name}`}
+                </a>
+              </div>
+            ))}
+        </section>
+        <section className="panel search-section">
+          <h2>Publicações de até 30 dias</h2>
+          <p className="muted">
+            Regra obrigatória para a coleta, a prévia e a lista: publicação nos
+            últimos 30 dias. Data de descoberta ou atualização não substitui a
+            publicação. Datas ausentes, inválidas ou futuras deixam a vaga fora
+            da lista; o histórico é preservado no banco.
           </p>
         </section>
         <section className="panel search-section">
@@ -373,6 +440,13 @@ function Editor({
                 Resposta da fonte: {time(preview.data.fetched_at)}. É uma
                 amostra do feed em cache, que pode estar desatualizado.
               </p>
+              {preview.data.missing_sources?.length ? (
+                <p>
+                  Fontes ainda sem cache:{" "}
+                  {preview.data.missing_sources.join(", ")}. A prévia cobre
+                  somente as demais fontes.
+                </p>
+              ) : null}
               <p>
                 {Object.entries(MARKET_NAMES)
                   .map(

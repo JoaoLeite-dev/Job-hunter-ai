@@ -37,4 +37,9 @@ DEMO_JOBS = [
 
 
 def fixture_source() -> list[dict]:
-    return DEMO_JOBS
+    from job_hunter.infrastructure.db import utcnow
+
+    return [
+        {**job, "published_at": utcnow().isoformat(), "publication_basis": "synthetic_demo"}
+        for job in DEMO_JOBS
+    ]
