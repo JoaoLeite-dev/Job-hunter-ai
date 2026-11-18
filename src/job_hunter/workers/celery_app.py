@@ -13,11 +13,12 @@ celery.conf.update(
     result_serializer="json",
     broker_connection_retry_on_startup=True,
     beat_schedule={
+        "sheets-outbox": {"task": "job_hunter.sheets_sync", "schedule": 60.0},
         "daily-discovery": {
             "task": "job_hunter.discovery",
             "schedule": crontab(
                 minute=minute, hour=hour, day_of_month=day, month_of_year=month, day_of_week=weekday
             ),
-        }
+        },
     },
 )

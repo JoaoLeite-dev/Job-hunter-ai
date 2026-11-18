@@ -17,3 +17,24 @@ def discover() -> dict:
             return run_demo(session)
     finally:
         engine.dispose()
+
+
+@celery.task(name="job_hunter.sheets_sync")
+def sync_sheets() -> dict:
+    from job_hunter.application.sheets_sync import sync
+    from job_hunter.infrastructure.sheets import GoogleSheets, SheetsError
+
+    settings = Settings.from_env()
+    if not settings.sheets_sync_enabled:
+        return {"status": "disabled"}
+    try:
+        gateway = GoogleSheets.from_env()
+    except (SheetsError, ValueError):
+        return {"status": "not_configured"}
+    engine = create_engine(settings.database_url, pool_pre_ping=True)
+    try:
+        with Session(engine) as session, session.begin():
+            return sync(session, gateway)
+    finally:
+        engine.dispose()
+        gateway.close()

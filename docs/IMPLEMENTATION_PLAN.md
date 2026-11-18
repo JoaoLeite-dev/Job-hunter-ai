@@ -26,7 +26,9 @@ correspondentes, antes de disponibilizar as respectivas operações.
 
 ## Andamento
 
-- Fase 1 conclu?da e commitada: `9b6004b` (8 testes).
-- Fase 2a conclu?da: descoberta/matching offline (16 testes + smoke Compose).
-- Fase 2b pendente: fontes reais e OpenAI; requer fontes autorizadas e decis?o de credenciais.
-- Fases 3?6 pendentes conforme depend?ncias acima.
+- Fase 1 concluída e commitada: `9b6004b` (8 testes).
+- Fase 2a concluída: descoberta/matching offline (16 testes + smoke Compose).
+- Fase 2b pendente: fontes reais e OpenAI; requer fontes autorizadas e decisão de credenciais.
+- Fase 3a: adaptador OAuth Sheets, projeções, outbox, retries e testes de contrato implementados; validação PostgreSQL aprovada (migração, retry, rollback e concorrência).
+- Fase 3b pendente: consentimento inicial OAuth, escolha da planilha e validação com conta real.
+- Fases 4–6 pendentes conforme dependências acima.

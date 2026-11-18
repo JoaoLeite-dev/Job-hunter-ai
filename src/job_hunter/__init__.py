@@ -1,13 +1,16 @@
 import hmac
 from uuid import uuid4
 
+import click
 from flask import Flask, g, jsonify, request
 from sqlalchemy import create_engine, select, text
 from sqlalchemy.orm import sessionmaker
 
 from job_hunter.application.demo import run_demo
+from job_hunter.application.sheets_sync import retry_failed, sync
 from job_hunter.config import Settings
 from job_hunter.infrastructure.db import Job, Match
+from job_hunter.infrastructure.sheets import GoogleSheets, SheetsError
 
 
 def create_app(settings: Settings | None = None) -> Flask:
@@ -17,6 +20,7 @@ def create_app(settings: Settings | None = None) -> Flask:
     app.extensions["db_engine"] = engine
     app.extensions["session_factory"] = sessionmaker(engine)
     app.extensions["settings"] = settings
+    app.extensions["sheets_gateway_factory"] = GoogleSheets.from_env
     app.config["MAX_CONTENT_LENGTH"] = 1024 * 1024
 
     @app.before_request
@@ -87,5 +91,47 @@ def create_app(settings: Settings | None = None) -> Flask:
 
         with app.extensions["session_factory"].begin() as session:
             click.echo(json.dumps(run_demo(session)))
+
+    @app.post("/api/v1/integrations/sheets/sync")
+    def sheets_sync():
+        if not settings.sheets_sync_enabled:
+            return jsonify(error="sheets_sync_disabled"), 409
+        try:
+            gateway = app.extensions["sheets_gateway_factory"]()
+        except (SheetsError, ValueError):
+            return jsonify(error="sheets_not_configured"), 409
+        try:
+            with app.extensions["session_factory"].begin() as session:
+                result = sync(session, gateway)
+            return jsonify(result), 409 if result["busy"] else 200
+        finally:
+            gateway.close()
+
+    @app.cli.command("sheets-sync")
+    @click.option(
+        "--retry-failed",
+        "retry",
+        is_flag=True,
+        help="Requeue failed events after correcting the cause.",
+    )
+    def sheets_sync_cli(retry):
+        import json
+
+        import click
+
+        if not settings.sheets_sync_enabled:
+            raise click.ClickException("Sheets sync is disabled")
+        try:
+            gateway = app.extensions["sheets_gateway_factory"]()
+        except (SheetsError, ValueError):
+            raise click.ClickException("Sheets is not configured") from None
+        try:
+            with app.extensions["session_factory"].begin() as session:
+                if retry:
+                    retry_failed(session)
+                result = sync(session, gateway)
+            click.echo(json.dumps(result))
+        finally:
+            gateway.close()
 
     return app

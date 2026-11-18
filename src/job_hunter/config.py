@@ -12,6 +12,7 @@ class Settings:
     cron: str
     email_send_enabled: bool = False
     discovery_mode: str = "disabled"
+    sheets_sync_enabled: bool = False
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -32,4 +33,5 @@ class Settings:
             timezone=timezone,
             cron=cron,
             discovery_mode=os.getenv("DISCOVERY_MODE", "disabled"),
+            sheets_sync_enabled=os.getenv("SHEETS_SYNC_ENABLED", "false").lower() == "true",
         )

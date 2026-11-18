@@ -1,7 +1,17 @@
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    JSON,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    false,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -86,9 +96,15 @@ class AuditEvent(Base):
 
 class Outbox(Base):
     __tablename__ = "sync_outbox"
+    __table_args__ = (
+        Index("ix_sync_outbox_pending", "processed_at", "next_attempt_at", "attempts"),
+    )
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     entity_id: Mapped[str] = mapped_column(String(100))
     event_type: Mapped[str] = mapped_column(String(100))
     payload: Mapped[dict] = mapped_column(JSON)
     attempts: Mapped[int] = mapped_column(Integer, default=0)
     processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    next_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_error_code: Mapped[str | None] = mapped_column(String(100))
+    terminal_failure: Mapped[bool] = mapped_column(default=False, server_default=false())

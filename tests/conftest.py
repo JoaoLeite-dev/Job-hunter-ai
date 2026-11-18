@@ -11,6 +11,7 @@ def app(tmp_path, monkeypatch):
     monkeypatch.setenv("API_TOKEN", "test-token")
     monkeypatch.setenv("EMAIL_SEND_ENABLED", "false")
     monkeypatch.setenv("DISCOVERY_MODE", "disabled")
+    monkeypatch.setenv("SHEETS_SYNC_ENABLED", "false")
     command.upgrade(Config("alembic.ini"), "head")
     app = create_app()
     yield app
