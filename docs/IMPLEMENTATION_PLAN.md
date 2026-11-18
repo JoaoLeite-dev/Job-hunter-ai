@@ -14,7 +14,7 @@ As especificações originais permanecem em [REQUIREMENTS.md](../REQUIREMENTS.md
    edição textual preservando XML, validação factual/visual/ATS, exportação PDF.
 5. **Aprovação e envio:** pacote imutável, hash, expiração/revogação, OAuth Gmail,
    limites e resolução de envios incertos; E2E com Gmail simulado.
-6. **Produção assistida:** observabilidade, retenção, backup/restauração e piloto
+6. **Operação local assistida:** observabilidade, retenção, backup/restauração e piloto
    autorizado individualmente. Envio real permanece desligado até configuração completa.
 
 ## Evidências
@@ -28,7 +28,8 @@ correspondentes, antes de disponibilizar as respectivas operações.
 
 - Fase 1 concluída e commitada: `9b6004b` (8 testes).
 - Fase 2a concluída: descoberta/matching offline (16 testes + smoke Compose).
-- Fase 2b pendente: fontes reais e OpenAI; requer fontes autorizadas e decisão de credenciais.
+- Fase 2b1 concluída: busca real Remotive, cache/budget local, atualização de anúncios e score preliminar.
+- Fase 2b2 pendente: integração OpenAI e decisão de credenciais.
 - Fase 3a: adaptador OAuth Sheets, projeções, outbox, retries e testes de contrato implementados; validação PostgreSQL aprovada (migração, retry, rollback e concorrência).
 - Fase 3b pendente: consentimento inicial OAuth, escolha da planilha e validação com conta real.
 - Fase 4a concluída: pasta privada, importação imutável, cadastro, manifesto proposto e autorização por campos; 55 testes e smoke PostgreSQL aprovados.
@@ -37,11 +38,15 @@ correspondentes, antes de disponibilizar as respectivas operações.
 - Fases 5–6 pendentes conforme dependências acima.
 
 
-## Incremento UI-1 ? acompanhamento local
+## Incremento UI-1 — acompanhamento local
 
-Antecipado por solicita??o do usu?rio antes da fase 5: painel React integrado ao
-Flask, sess?o autenticada, prote??o CSRF, vagas/score explic?vel, curr?culo/PDF,
-auditoria e estados reais de integra??es. 114 testes de backend e QA Chromium em
-desktop/celular aprovados. Conceito em `docs/design/`. A pr?via isolada est? na
-porta 5001; a atualiza??o da imagem Docker foi recusada e permanece pendente.
-A interface n?o declara conclu?das as fases de descoberta real, aprova??o ou envio.
+Antecipado por solicitação do usuário antes da fase 5: painel React integrado ao
+Flask, sessão autenticada, proteção CSRF, vagas/score explicável, currículo/PDF,
+auditoria e estados reais de integrações. 114 testes de backend e QA Chromium em
+desktop/celular aprovados. Conceito em `docs/design/`. A prévia isolada inicial da
+porta 5001 foi substituída pelo Compose local na fase 2b1. A interface não declara
+concluídas as fases de análise GPT, aprovação de pacotes ou envio.
+
+## Operação exclusivamente local e busca real
+
+Aplicação e banco permanecem no computador do usuário. Não haverá deploy em nuvem. A fase 2b1 conecta Remotive ao painel e ao agendamento; quatro vagas reais persistidas, 129 testes e smoke PostgreSQL aprovados. O painel principal em `http://127.0.0.1:5000` substitui a prévia isolada da porta 5001. Veja [operação e busca local](LOCAL_DISCOVERY.md). GPT é o próximo incremento.

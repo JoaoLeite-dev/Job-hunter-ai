@@ -1,6 +1,7 @@
 """Transactional discovery. Connectors provide structured records, not executable instructions."""
 
 from collections.abc import Callable, Iterable
+from datetime import datetime
 
 from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
@@ -23,7 +24,13 @@ class Discovery:
                 select(VerifiedFact).where(VerifiedFact.profile_id == profile_id)
             )
         ]
-        summary = {"created": 0, "duplicates": 0, "failed_sources": [], "invalid_records": 0}
+        summary = {
+            "created": 0,
+            "updated": 0,
+            "duplicates": 0,
+            "failed_sources": [],
+            "invalid_records": 0,
+        }
         for source_id, fetch in sources.items():
             try:
                 records = list(fetch())
@@ -50,7 +57,57 @@ class Discovery:
                                 (Job.source_id == source_id)
                                 & (Job.external_id == str(external_id)),
                             )
-                        if self.session.scalar(select(Job).where(identity)):
+                        existing = self.session.scalar(select(Job).where(identity))
+                        if existing:
+                            # Refresh live evidence while preserving identity/history.
+                            if source_id == "remotive" and existing.source_id == source_id:
+                                result = score(raw, facts)
+                                match = self.session.scalar(
+                                    select(Match).where(
+                                        Match.job_id == existing.id,
+                                        Match.profile_id == profile_id,
+                                    )
+                                )
+                                changed = (
+                                    existing.data != raw
+                                    or match is None
+                                    or match.evidence != result
+                                )
+                                existing.company, existing.title = (
+                                    raw["company"].strip(),
+                                    raw["title"].strip(),
+                                )
+                                existing.description, existing.data = raw["description"], raw
+                                existing.canonical_url = url
+                                existing.status = raw.get("status", "unknown")
+                                existing.last_verified_at = datetime.fromisoformat(
+                                    raw["observed_at"]
+                                )
+                                if match is None:
+                                    match = Match(job_id=existing.id, profile_id=profile_id)
+                                    self.session.add(match)
+                                match.score, match.hard_gate, match.evidence = (
+                                    result["score"],
+                                    result["hard_gate"],
+                                    result,
+                                )
+                                if changed:
+                                    self.session.add(
+                                        Outbox(
+                                            entity_id=existing.id,
+                                            event_type="job.updated",
+                                            payload={"job_id": existing.id},
+                                        )
+                                    )
+                                    self.session.add(
+                                        AuditEvent(
+                                            actor="discovery",
+                                            entity_id=existing.id,
+                                            event_type="job.updated",
+                                            payload_redacted={"source_id": source_id},
+                                        )
+                                    )
+                                    summary["updated"] += 1
                             summary["duplicates"] += 1
                             continue
                         result = score(raw, facts)
@@ -63,6 +120,9 @@ class Discovery:
                             description=raw["description"],
                             status=raw.get("status", "unknown"),
                             data=raw,
+                            last_verified_at=datetime.fromisoformat(raw["observed_at"])
+                            if raw.get("observed_at")
+                            else None,
                         )
                         self.session.add(job)
                         self.session.flush()

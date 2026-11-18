@@ -9,6 +9,9 @@ export type Job = {
   remote: boolean | null;
   status: string;
   is_demo: boolean;
+  source_name: string;
+  source_location: string;
+  score_notice: string;
   score: number | null;
   discovered_at: string;
   verified_at: string | null;

@@ -355,18 +355,17 @@ DOCX inalterado. Isso valida a baseline do ambiente, não uma adaptação real p
 vaga. Nenhuma variante do CV pessoal foi gerada para candidaturas fictícias.
 
 
-## Interface de acompanhamento ? fase UI-1
+## Interface de acompanhamento — fase UI-1
 
-O painel React ? servido pelo pr?prio Flask em `/`, com as telas Vis?o geral,
-Vagas, Curr?culo, Candidaturas, Atividade e Integra??es. Inclui busca e filtro de
-vagas, motivos do score, hist?rico, campos autorizados e pr?via PDF autenticada do
-mestre. Atualiza os dados a cada 30 segundos enquanto a aba est? vis?vel.
+O painel React é servido pelo Flask em `/`, com Visão geral, Vagas, Currículo,
+Candidaturas, Atividade e Integrações. Inclui busca/filtros, motivos do score,
+histórico, campos autorizados e PDF autenticado do mestre. Atualiza a cada 30
+segundos enquanto a aba está visível.
 
-O acesso usa o `API_TOKEN` do ambiente: digite-o na tela de entrada. A sess?o tem
-cookie HttpOnly e SameSite Strict; opera??es pela interface exigem CSRF. O token
-n?o fica no HTML nem no armazenamento do navegador. Configure um
-`UI_SESSION_SECRET` aleat?rio e est?vel para manter sess?es entre reinicializa??es;
-em HTTPS use `UI_COOKIE_SECURE=true`. As APIs tamb?m continuam aceitando Bearer.
+Digite o `API_TOKEN` do `.env` na entrada. A sessão usa cookie HttpOnly e SameSite
+Strict; operações pela interface exigem CSRF. O token não fica no HTML nem no
+armazenamento do navegador. Configure `UI_SESSION_SECRET` aleatório e estável
+para manter sessões entre reinicializações. As APIs continuam aceitando Bearer.
 
 Para compilar localmente:
 
@@ -375,34 +374,19 @@ npm.cmd --prefix frontend ci
 npm.cmd --prefix frontend run build
 ```
 
-O Dockerfile agora compila o frontend em um est?gio Node separado e inclui os
-arquivos no pacote Python. Depois de uma atualiza??o autorizada do Compose, a
-interface ser? servida na mesma porta da API. **A atualiza??o dos containers foi
-recusada pelo controle de execu??o nesta sess?o; essa nova imagem ainda n?o foi
-validada nem aplicada ao Docker.**
+O Dockerfile compila o frontend em um estágio Node separado e inclui os arquivos
+no pacote Python. A primeira prévia usou SQLite isolado na porta 5001. Ela foi
+substituída nesta fase pelo painel principal em `http://127.0.0.1:5000`, com
+PostgreSQL local e conversão PDF no Docker.
 
-Para a demonstra??o desta sess?o, est? dispon?vel uma pr?via em
-`http://127.0.0.1:5001`, com SQLite privado criado a partir de uma leitura dos dados
-existentes. Suas a??es afetam apenas essa c?pia; containers e PostgreSQL atuais
-permanecem intactos. Essa pr?via usa o PDF verdadeiro da baseline j? validada do
-mestre, vinculado ao hash do DOCX; novas convers?es de variantes ficam indispon?veis
-nesse processo. O processo de pr?via ? tempor?rio e precisa ser reiniciado ap?s
-encerrar a sess?o de desenvolvimento.
+O CV real mantém 78 fatos confirmados e cinco campos autorizados. Vagas de
+demonstração usam um perfil sintético e continuam identificadas como tal.
+Aprovação de pacotes e envio Gmail ainda estão pendentes; nenhum e-mail é enviado.
 
-As tr?s vagas s?o simuladas e os scores pertencem ao perfil sint?tico. A interface
-mostra essa origem. Seu CV real aparece com 78 fatos confirmados e cinco campos
-autorizados. Fontes reais, OpenAI, aprova??o de pacotes e envio Gmail continuam
-pendentes; nenhum e-mail ? enviado.
+A fase UI-1 passou em 114 testes e QA Chromium desktop/celular. A fase de busca
+real amplia essa validação, conforme documentação abaixo. Referência visual:
+[conceito](docs/design/dashboard-concept.png) e [brief](docs/design/BRIEF.md).
 
-Valida??o: 114 testes Python, Ruff, TypeScript, build Vite e formata??o aprovados.
-Playwright com Chromium verificou login/logout, prote??o da API, filtros, detalhes,
-demonstra??o idempotente, cinco campos, PDF real e as seis telas. Capturas em
-1487?1058 e 390?844 inspecionadas; sem erros JavaScript/console ou transbordamento
-horizontal no celular. O navegador integrado indispon?vel motivou esse fallback.
-Capturas e relat?rio ficam fora do Git em `%TEMP%/jobhunter-ui-qa/`.
+## Busca real local — fase 2b1
 
-Refer?ncia: [conceito visual](docs/design/dashboard-concept.png) e
-[brief](docs/design/BRIEF.md). Compara??o visual conclu?da para sidebar, cabe?alho,
-m?tricas, tabela e pain?is inferiores, incluindo tipografia e cores. Diferen?as
-intencionais: score real 40 para Demo Unknown, hor?rios/eventos reais e aviso de
-pr?via isolada; texto e ?cones nativos mant?m a estrutura do conceito.
+Remotive integrada e ambiente Docker atualizado localmente, com PostgreSQL persistente. O painel principal em `http://127.0.0.1:5000` substitui a prévia isolada da etapa UI-1. Não haverá hospedagem em nuvem. Veja [configuração, limitações e testes](docs/LOCAL_DISCOVERY.md).

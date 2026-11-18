@@ -415,6 +415,7 @@ select {
 }
 .table-toolbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 18px;
@@ -439,6 +440,7 @@ select {
 }
 .filters {
   display: flex;
+  margin-left: auto;
   align-items: center;
   gap: 14px;
 }
@@ -516,6 +518,7 @@ td {
   color: #151a27;
 }
 .job-name > span {
+  display: block;
   font-size: 14px;
   color: #606a7d;
   line-height: 1.6;

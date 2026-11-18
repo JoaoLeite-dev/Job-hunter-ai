@@ -19,6 +19,8 @@ x-app: &app
     GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-}
     GOOGLE_OAUTH_REFRESH_TOKEN: ${GOOGLE_OAUTH_REFRESH_TOKEN:-}
     DISCOVERY_MODE: ${DISCOVERY_MODE:-disabled}
+    DISCOVERY_PROFILE_ID: ${DISCOVERY_PROFILE_ID:-}
+    DISCOVERY_ROLES: ${DISCOVERY_ROLES:-frontend,front end,backend,back end,fullstack,full stack,react native,expo,software engineer,software developer}
     JOB_SEARCH_TIMEZONE: ${JOB_SEARCH_TIMEZONE:-America/Bahia}
     JOB_SEARCH_CRON: ${JOB_SEARCH_CRON:-0 8 * * *}
   depends_on:

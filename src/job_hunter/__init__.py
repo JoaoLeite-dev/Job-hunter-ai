@@ -16,10 +16,12 @@ from job_hunter.api.resumes import profile_create, resume_import, resume_inspect
 from job_hunter.api.web import blueprint as web_blueprint
 from job_hunter.api.web import browser_authenticated, csrf_valid
 from job_hunter.application.demo import run_demo
+from job_hunter.application.live_discovery import run_live
 from job_hunter.application.sheets_sync import retry_failed, sync
 from job_hunter.config import Settings
 from job_hunter.infrastructure.db import Job, Match
 from job_hunter.infrastructure.document_renderer import LibreOfficeRenderer
+from job_hunter.infrastructure.remotive import SourceError, fetch_public_jobs
 from job_hunter.infrastructure.sheets import GoogleSheets, SheetsError
 
 
@@ -41,6 +43,7 @@ def create_app(settings: Settings | None = None) -> Flask:
         settings.libreoffice_binary
     )
     app.extensions["sheets_gateway_factory"] = GoogleSheets.from_env
+    app.extensions["public_source_fetch"] = fetch_public_jobs
     app.config["MAX_CONTENT_LENGTH"] = 1024 * 1024
 
     @app.before_request
@@ -106,6 +109,13 @@ def create_app(settings: Settings | None = None) -> Flask:
 
     @app.post("/api/v1/discovery/run")
     def discovery_run():
+        if settings.discovery_mode == "live":
+            try:
+                return jsonify(run_live(engine, settings, app.extensions["public_source_fetch"]))
+            except SourceError as error:
+                return jsonify(error=str(error)), 409 if str(
+                    error
+                ) == "discovery_profile_missing" else 503
         if settings.discovery_mode != "fixture":
             return jsonify(error="discovery_not_configured"), 409
         with app.extensions["session_factory"].begin() as session:

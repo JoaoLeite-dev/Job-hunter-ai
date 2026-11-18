@@ -1,5 +1,7 @@
 # Job Hunter AI — Requisitos do Produto e do Sistema
 
+> Decisão de operação: aplicação, painel, PostgreSQL, Redis, workers e arquivos rodam exclusivamente no computador do usuário, via Docker Compose local. Não haverá hospedagem em nuvem. Fontes de vagas e, futuramente, OpenAI/Google são APIs externas acessadas pela aplicação local.
+
 **Versão:** 1.0 · **Data:** 2026-11-18 · **Status:** Baseline para desenvolvimento no Codex
 
 ## 1. Visão do produto

@@ -36,7 +36,8 @@ EVENT_LABELS = {
     "resume.wording_confirmed": "Redação de currículo confirmada",
     "resume.variant_drafted": "Variante do currículo preparada",
     "resume.validated": "Validação de currículo concluída",
-    "discovery.completed": "Busca de demonstração concluída",
+    "discovery.completed": "Busca de vagas concluída",
+    "job.updated": "Anúncio e classificação atualizados",
     "source.completed": "Fonte de vagas processada",
     "source_failed": "Falha em uma fonte de vagas",
     "job.discovered": "Oportunidade registrada",
@@ -76,9 +77,11 @@ def dashboard():
     with current_app.extensions["session_factory"]() as db:
         jobs = list(db.scalars(select(Job).order_by(Job.discovered_at.desc(), Job.id).limit(200)))
         templates = list(db.scalars(select(ResumeTemplate).order_by(ResumeTemplate.id)))
-        profile_ids = {t.profile_id for t in templates} | {DEMO_PROFILE_ID}
+        primary = settings.discovery_profile_id or next(
+            (t.profile_id for t in templates if t.active and t.profile_id != DEMO_PROFILE_ID), None
+        )
+        profile_ids = {t.profile_id for t in templates} | {DEMO_PROFILE_ID, primary}
         profiles = {p.id: p for p in db.scalars(select(Profile).where(Profile.id.in_(profile_ids)))}
-        primary = next((t.profile_id for t in templates if t.profile_id != DEMO_PROFILE_ID), None)
         matches = {
             (m.job_id, m.profile_id): m
             for m in db.scalars(select(Match).where(Match.job_id.in_([j.id for j in jobs])))
@@ -116,6 +119,11 @@ def dashboard():
                     "match_profile": "Perfil sintético de demonstração"
                     if demo
                     else "Perfil principal",
+                    "source_name": job.data.get(
+                        "source_name", "Demonstração" if demo else job.source_id
+                    ),
+                    "source_location": job.data.get("source_location", ""),
+                    "score_notice": job.data.get("score_notice", ""),
                 }
             )
         items.sort(

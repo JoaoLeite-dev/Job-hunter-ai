@@ -17,6 +17,11 @@ class Settings:
     match_prepare_threshold: int = 75
     resume_render_enabled: bool = False
     libreoffice_binary: str = "/usr/bin/libreoffice"
+    discovery_profile_id: str = ""
+    discovery_roles: str = (
+        "frontend,front end,backend,back end,fullstack,full stack,react native,expo,"
+        "software engineer,software developer"
+    )
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -34,6 +39,8 @@ class Settings:
         if not 0 <= threshold <= 100:
             raise ValueError("Invalid match threshold")
         return cls(
+            discovery_profile_id=os.getenv("DISCOVERY_PROFILE_ID", ""),
+            discovery_roles=os.getenv("DISCOVERY_ROLES", cls.discovery_roles),
             match_prepare_threshold=threshold,
             resume_render_enabled=os.getenv("RESUME_RENDER_ENABLED", "false").lower() == "true",
             libreoffice_binary=os.getenv("LIBREOFFICE_BINARY", "/usr/bin/libreoffice"),

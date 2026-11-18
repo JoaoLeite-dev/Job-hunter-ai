@@ -35,6 +35,15 @@ class Profile(Base):
     preferences: Mapped[dict] = mapped_column(JSON, default=dict)
 
 
+class SourceCache(Base):
+    __tablename__ = "source_cache"
+    id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    next_request_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    fetched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    payload: Mapped[dict | None] = mapped_column(JSON)
+    error_code: Mapped[str | None] = mapped_column(String(100))
+
+
 class VerifiedFact(Base):
     __tablename__ = "verified_facts"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)

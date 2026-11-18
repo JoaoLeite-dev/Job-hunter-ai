@@ -17,8 +17,10 @@ export function Jobs({
 }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
+  const [origin, setOrigin] = useState("all");
   const filtered = jobs.filter(
     (j) =>
+      (origin === "all" || (origin === "demo" ? j.is_demo : !j.is_demo)) &&
       (filter === "all" || j.eligibility.status === filter) &&
       `${j.company} ${j.title}`
         .toLocaleLowerCase("pt-BR")
@@ -30,9 +32,20 @@ export function Jobs({
       <div className="table-toolbar">
         <div className="section-heading">
           <h2>Oportunidades recentes</h2>
-          {anyDemo ? <span className="subtle-tag">Dados simulados</span> : null}
+          {anyDemo ? (
+            <span className="subtle-tag">Inclui demonstração</span>
+          ) : null}
         </div>
         <div className="filters">
+          <select
+            aria-label="Filtrar origem"
+            value={origin}
+            onChange={(e) => setOrigin(e.target.value)}
+          >
+            <option value="all">Todas as origens</option>
+            <option value="real">Vagas reais</option>
+            <option value="demo">Demonstração</option>
+          </select>
           <div className="search-input">
             <Icon name="search" />
             <input
@@ -74,6 +87,12 @@ export function Jobs({
                   <td className="job-name">
                     <strong>{job.company}</strong>
                     <span>{job.title}</span>
+                    <span className="muted small">
+                      Fonte: {job.source_name}
+                      {job.is_demo
+                        ? " · perfil sintético"
+                        : " · score preliminar"}
+                    </span>
                   </td>
                   <td className="job-modality">{modality(job)}</td>
                   <td>
@@ -108,7 +127,7 @@ export function Jobs({
           <p>
             {jobs.length
               ? "Experimente outro nome ou situação."
-              : "Execute a demonstração para conhecer o fluxo com vagas de exemplo."}
+              : "Use o botão de busca para consultar as fontes configuradas."}
           </p>
           {jobs.length ? (
             <button
@@ -116,6 +135,7 @@ export function Jobs({
               onClick={() => {
                 setQuery("");
                 setFilter("all");
+                setOrigin("all");
               }}
             >
               Limpar filtros
@@ -124,9 +144,9 @@ export function Jobs({
         </div>
       )}
       <div className="table-note">
-        {anyDemo
-          ? "Aderência calculada com um perfil sintético de demonstração."
-          : "A aderência depende de avaliação com os fatos confirmados do perfil."}
+        Vagas reais: pontuação preliminar por tags da fonte e fatos confirmados.
+        Demonstrações usam um perfil sintético. A elegibilidade reflete a
+        política informada pela fonte.
         {jobs.length >= 200 ? <span>Últimas 200 vagas no painel.</span> : null}
       </div>
     </section>
@@ -249,12 +269,16 @@ export function Integrations({ data }: { data: Dashboard }) {
       title: "Fontes de vagas",
       icon: "search",
       state:
-        data.integrations.discovery_mode === "fixture"
-          ? "Demonstração"
-          : "Não configuradas",
+        data.integrations.discovery_mode === "live"
+          ? "Remotive conectada"
+          : data.integrations.discovery_mode === "fixture"
+            ? "Demonstração"
+            : "Não configuradas",
       tone: "blue",
       description:
-        "Vagas de exemplo para conhecer o fluxo. A busca em fontes reais ainda não está conectada.",
+        data.integrations.discovery_mode === "live"
+          ? "API pública Remotive, com cache no banco local por 6 horas e links de origem. Anúncios têm atraso de 24 horas na API. Filtros de cargo são configuráveis no ambiente."
+          : "Vagas de exemplo para conhecer o fluxo. Busca real desabilitada neste ambiente.",
     },
     {
       title: data.integrations.baseline_preview_only
@@ -362,6 +386,15 @@ export function JobDialog({
             <div className="dialog-company">{job.company}</div>
             <h2>{job.title}</h2>
             <p className="muted">{modality(job)}</p>
+            {!job.is_demo ? (
+              <div className="notice">
+                <Icon name="shield" />
+                <p>
+                  Fonte: {job.source_name}. Região informada:{" "}
+                  {job.source_location || "Não informada"}. {job.score_notice}
+                </p>
+              </div>
+            ) : null}
             {job.is_demo ? (
               <div className="notice">
                 <Icon name="shield" />
@@ -424,7 +457,9 @@ export function JobDialog({
                 <dd>{time(job.discovered_at)}</dd>
               </div>
               <div>
-                <dt>Disponibilidade</dt>
+                <dt>
+                  {job.is_demo ? "Disponibilidade" : "Observada na fonte"}
+                </dt>
                 <dd>{time(job.verified_at)}</dd>
               </div>
             </dl>
@@ -441,7 +476,7 @@ export function JobDialog({
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Abrir anúncio
+                Abrir anúncio · {job.source_name}
                 <Icon name="arrow" />
               </a>
             ) : (

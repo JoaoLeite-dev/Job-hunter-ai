@@ -172,17 +172,20 @@ export default function App() {
     if (!auth) return;
     setBusy(true);
     try {
-      const result = await api<{ created: number; duplicates: number }>(
-        "/api/v1/discovery/run",
-        { method: "POST" },
-        auth.csrf_token,
-      );
+      const result = await api<{
+        created: number;
+        duplicates: number;
+        updated?: number;
+        cached?: boolean;
+      }>("/api/v1/discovery/run", { method: "POST" }, auth.csrf_token);
       await refresh();
       setToast(
-        `Demonstração concluída: ${result.created} novas vagas; ${result.duplicates} já existentes.`,
+        `Busca concluída: ${result.created} novas vagas; ${result.duplicates} já existentes.${result.cached ? " Cache local reutilizado (consulta à fonte a cada 6 horas)." : ""}`,
       );
     } catch {
-      setToast("A demonstração não está disponível neste ambiente.");
+      setToast(
+        "Não foi possível concluir a busca. Confira o perfil cadastrado e a conexão com a fonte; tente novamente mais tarde.",
+      );
     } finally {
       setBusy(false);
     }
@@ -335,14 +338,20 @@ export default function App() {
                 disabled={
                   busy ||
                   !data ||
-                  data.integrations.discovery_mode !== "fixture"
+                  !["fixture", "live"].includes(
+                    data.integrations.discovery_mode,
+                  )
                 }
               >
                 <Icon
                   name={busy ? "refresh" : "play"}
                   className={busy ? "spin" : ""}
                 />
-                {busy ? "Executando…" : "Executar demonstração"}
+                {busy
+                  ? "Buscando…"
+                  : data?.integrations.discovery_mode === "live"
+                    ? "Buscar vagas reais"
+                    : "Executar demonstração"}
               </button>
             ) : null}
           </div>

@@ -1,5 +1,7 @@
 # Job Hunter AI — Software Design Document (SDD)
 
+> Decisão de operação: aplicação, painel, PostgreSQL, Redis, workers e arquivos rodam exclusivamente no computador do usuário, via Docker Compose local. Não haverá hospedagem em nuvem. Fontes de vagas e, futuramente, OpenAI/Google são APIs externas acessadas pela aplicação local.
+
 **Versão:** 1.0 · **Data:** 2026-11-18 · **Status:** Proposta técnica para implementação
 
 ## 1. Objetivo e limites
