@@ -14,6 +14,7 @@ class Settings:
     discovery_mode: str = "disabled"
     sheets_sync_enabled: bool = False
     resume_storage_root: str = "var/private/resumes"
+    match_prepare_threshold: int = 75
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -27,7 +28,11 @@ class Settings:
             raise ValueError(
                 "Real email delivery is not implemented; keep EMAIL_SEND_ENABLED=false"
             )
+        threshold = int(os.getenv("MATCH_PREPARE_THRESHOLD", "75"))
+        if not 0 <= threshold <= 100:
+            raise ValueError("Invalid match threshold")
         return cls(
+            match_prepare_threshold=threshold,
             database_url=os.getenv("DATABASE_URL", "sqlite:///var/local.db"),
             redis_url=os.getenv("REDIS_URL", "redis://localhost:6379/0"),
             api_token=os.getenv("API_TOKEN", ""),

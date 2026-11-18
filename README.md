@@ -238,3 +238,52 @@ do CV real foi autorizado automaticamente; nenhum trecho do CV foi versionado.
 A fase 4b implementará a edição de campos autorizados, fatos confirmados, exportação
 PDF e validações estrutural, visual e ATS. Não foi gerada variante adaptada neste
 incremento; renderização e preservação visual ainda não foram validadas.
+
+## Edição controlada e fatos confirmados (fase 4b1)
+
+A autorização dos campos permanece separada da confirmação dos fatos. Foram
+adicionadas rotas autenticadas para registrar ações explícitas do proprietário:
+
+- `POST /api/v1/resume-templates/{id}/confirm-facts`: `{manifest_hash, confirmed: true}`
+  confirma o conteúdo da versão exata do CV. Registra os trechos literais e extrai
+  tecnologias somente de listas explicitamente identificadas. Não infere stacks,
+  senioridade, métricas ou experiências ausentes.
+- `POST /api/v1/resume-templates/{id}/wording-facts`: `{manifest_hash, field_id, claim,
+  confirmed: true}` confirma uma redação específica para um campo autorizado.
+
+O editor inicial exige uma redação exata confirmada para cada alteração. Um ID de
+fato sobre uma tecnologia isolada não é evidência suficiente para uma frase nova.
+A integração semântica com IA continua pendente; nenhuma chamada OpenAI é feita.
+O aceite da redação é uma confirmação factual, ainda separado da aprovação final
+individual do pacote de candidatura.
+
+`POST /api/v1/jobs/{job_id}/resume-variants` recebe `{template_id, edits}`, com
+cada edição contendo `field_id`, `original_text`, `proposed_text` e
+`supporting_fact_ids`. A geração exige template autorizado, fatos do mesmo perfil,
+confirmação vinculada ao campo/template, vaga ativa verificada nas últimas 24h e
+match sem hard gate com score no mínimo `MATCH_PREPARE_THRESHOLD` (padrão 75).
+
+O editor usa offsets de bytes dos nós `w:t`, preservando o XML fora dos textos
+editados. Estilos, atributos, prefixos de namespaces, runs e partes protegidas
+não são serializados novamente. Limites de tamanho, números novos, contatos,
+controles, campos protegidos e alterações sem evidência são bloqueados.
+A validação estrutural compara cada parte do pacote e a ordem do texto extraído.
+Isso não substitui validação de layout nem assegura compatibilidade universal ATS.
+
+A migração `0004` registra variantes, hashes, plano e versões de evidências.
+Repetir o mesmo plano reutiliza a variante; corrupção do arquivo, revogação de um
+fato ou mudança de versão de evidência bloqueiam sua consulta/uso. Metadados ficam
+em `GET /api/v1/resume-variants/{id}`. Os arquivos permanecem na pasta privada.
+As respostas não aceitam flags de validação enviadas pelo cliente.
+
+Nesta etapa, as variantes têm estado `validation_pending`: a renderização e os
+testes PDF/visuais ainda precisam ser implementados. O relatório informa
+`not_run` para essas verificações e `can_approve_application=false`.
+Nenhuma variante real do usuário foi gerada para vagas simuladas.
+
+Validação: 86 testes aprovados, lint/formatação aprovados e smoke com editor,
+revogação, replay e migrações em PostgreSQL isolado aprovado:
+
+```powershell
+Get-Content -Raw scripts/smoke_resume_editor.py | docker exec -i job-hunter-ai-api-1 python -
+```

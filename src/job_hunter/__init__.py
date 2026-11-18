@@ -6,6 +6,7 @@ from flask import Flask, g, jsonify, request
 from sqlalchemy import create_engine, select, text
 from sqlalchemy.orm import sessionmaker
 
+from job_hunter.api.resume_variants import blueprint as variant_blueprint
 from job_hunter.api.resumes import blueprint as resume_blueprint
 from job_hunter.api.resumes import profile_create, resume_import, resume_inspect
 from job_hunter.application.demo import run_demo
@@ -137,6 +138,7 @@ def create_app(settings: Settings | None = None) -> Flask:
             gateway.close()
 
     app.register_blueprint(resume_blueprint)
+    app.register_blueprint(variant_blueprint)
     for command in [profile_create, resume_import, resume_inspect]:
         app.cli.add_command(command)
     return app

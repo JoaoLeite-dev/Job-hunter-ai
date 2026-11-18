@@ -32,5 +32,6 @@ correspondentes, antes de disponibilizar as respectivas operações.
 - Fase 3a: adaptador OAuth Sheets, projeções, outbox, retries e testes de contrato implementados; validação PostgreSQL aprovada (migração, retry, rollback e concorrência).
 - Fase 3b pendente: consentimento inicial OAuth, escolha da planilha e validação com conta real.
 - Fase 4a concluída: pasta privada, importação imutável, cadastro, manifesto proposto e autorização por campos; 55 testes e smoke PostgreSQL aprovados.
-- Fase 4b pendente: revisão do manifesto e confirmação dos fatos, editor seguro, PDF, validação visual/ATS.
+- Fase 4b1 concluída: campos autorizados e fatos confirmados pelo usuário; editor de texto com evidências, validação estrutural, variantes idempotentes e 86 testes.
+- Fase 4b2 pendente: renderização, PDF e validação visual/ATS. Variantes continuam bloqueadas até concluir essas verificações.
 - Fases 5–6 pendentes conforme dependências acima.

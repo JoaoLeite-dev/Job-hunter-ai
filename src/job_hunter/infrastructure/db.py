@@ -120,3 +120,22 @@ class ResumeTemplate(Base):
     manifest_json: Mapped[dict] = mapped_column(JSON)
     version: Mapped[int] = mapped_column(Integer, default=1)
     active: Mapped[bool] = mapped_column(default=False)
+
+
+class ResumeVariant(Base):
+    __tablename__ = "resume_variants"
+    __table_args__ = (
+        UniqueConstraint("job_id", "template_id", "request_hash", name="uq_variant_request"),
+    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    job_id: Mapped[str] = mapped_column(ForeignKey("jobs.id"))
+    template_id: Mapped[str] = mapped_column(ForeignKey("resume_templates.id"))
+    request_hash: Mapped[str] = mapped_column(String(64))
+    docx_key: Mapped[str] = mapped_column(Text)
+    pdf_key: Mapped[str | None] = mapped_column(Text)
+    sha256_docx: Mapped[str] = mapped_column(String(64))
+    sha256_pdf: Mapped[str | None] = mapped_column(String(64))
+    edits_json: Mapped[list] = mapped_column(JSON)
+    evidence_json: Mapped[list] = mapped_column(JSON)
+    validation_json: Mapped[dict] = mapped_column(JSON)
+    state: Mapped[str] = mapped_column(String(40), default="validation_pending")
